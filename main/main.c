@@ -1,286 +1,171 @@
-/* Simple HTTP Server Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
+#include "switch_config.h"
+#include "FreeRTOS/FreeRTOS.h"
+#include "FreeRTOS/timers.h"
 #include <esp_wifi.h>
 #include <esp_event_loop.h>
-#include <esp_log.h>
-#include <esp_system.h>
+#include "esp_log.h"
 #include <nvs_flash.h>
 #include <sys/param.h>
+#include "esp_system.h"
+#include "esp_spi_flash.h"
+#include "message.h"
 
 #include <esp_http_server.h>
 
-/* A simple example that demonstrates how to create GET and POST
- * handlers for the web server.
- * The examples use simple WiFi configuration that you can set via
- * 'make menuconfig'.
- * If you'd rather not, just change the below entries to strings
- * with the config you want -
- * ie. #define EXAMPLE_WIFI_SSID "mywifissid"
-*/
-#define EXAMPLE_WIFI_SSID "JEHok-2"
-#define EXAMPLE_WIFI_PASS "VoulezVousCoucherAvecMoi"
+static const char *TAG = "Switch";
 
-static const char *TAG="APP";
+TimerHandle_t mHartBeat;
+static int mStartCounter;
+bool mConnected;
+httpd_handle_t mServer = NULL;
 
 /* An HTTP GET handler */
-esp_err_t hello_get_handler(httpd_req_t *req)
-{
-    char*  buf;
-    size_t buf_len;
+esp_err_t hGetSwitch(httpd_req_t *pReq) {
+	size_t lLength;
+    char*  lBuffer;
 
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
+    lBuffer = (char *)malloc(BUFFER_LENGTH);
+	memset(lBuffer, 0, BUFFER_LENGTH);
 
-    buf_len = httpd_req_get_hdr_value_len(req, "Test-Header-2") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        if (httpd_req_get_hdr_value_str(req, "Test-Header-2", buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found header => Test-Header-2: %s", buf);
-        }
-        free(buf);
-    }
-
-    buf_len = httpd_req_get_hdr_value_len(req, "Test-Header-1") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        if (httpd_req_get_hdr_value_str(req, "Test-Header-1", buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found header => Test-Header-1: %s", buf);
-        }
-        free(buf);
-    }
-
-    /* Read URL query string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_url_query_len(req) + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found URL query => %s", buf);
-            char param[32];
-            /* Get value of expected key from query string */
-            if (httpd_query_key_value(buf, "query1", param, sizeof(param)) == ESP_OK) {
-                ESP_LOGI(TAG, "Found URL query parameter => query1=%s", param);
-            }
-            if (httpd_query_key_value(buf, "query3", param, sizeof(param)) == ESP_OK) {
-                ESP_LOGI(TAG, "Found URL query parameter => query3=%s", param);
-            }
-            if (httpd_query_key_value(buf, "query2", param, sizeof(param)) == ESP_OK) {
-                ESP_LOGI(TAG, "Found URL query parameter => query2=%s", param);
-            }
-        }
-        free(buf);
-    }
-
-    /* Set some custom headers */
-    httpd_resp_set_hdr(req, "Custom-Header-1", "Custom-Value-1");
-    httpd_resp_set_hdr(req, "Custom-Header-2", "Custom-Value-2");
-
-    /* Send response with custom headers and body set as the
-     * string passed in user context*/
-    const char* resp_str = (const char*) req->user_ctx;
-    httpd_resp_send(req, resp_str, strlen(resp_str));
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
+	lLength = httpd_req_get_url_query_len(pReq) + 1;
+	if (lLength > 1) {
+		httpd_resp_set_status(pReq, HTTPD_400);
+		strcpy(lBuffer, HTTPD_400);
+	} else {
+		xMessSwitchStatus(lBuffer);
+//		strcpy(lBuffer, "Dit is de switch status");
+	}
+	httpd_resp_send(pReq, lBuffer, strlen(lBuffer));
+	free(lBuffer);
+	return ESP_OK;
 }
 
-httpd_uri_t hello = {
-    .uri       = "/hello",
-    .method    = HTTP_GET,
-    .handler   = hello_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx  = "Hello World!"
-};
+httpd_uri_t hGetSwitchCtrl = { .uri = "/switch", .method = HTTP_GET, .handler =
+		hGetSwitch, .user_ctx = NULL };
 
-/* An HTTP POST handler */
-esp_err_t echo_post_handler(httpd_req_t *req)
-{
-    char buf[100];
-    int ret, remaining = req->content_len;
+httpd_handle_t sStartServer(void) {
+	httpd_handle_t lServer = NULL;
+	httpd_config_t lConfig;
 
-    while (remaining > 0) {
-        /* Read the data for the request */
-        if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                /* Retry receiving if timeout occurred */
-                continue;
-            }
-            return ESP_FAIL;
-        }
+	lConfig = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
+	// Start the httpd server
+	printf("Starting server on port: '%d'\n", lConfig.server_port);
+	if (httpd_start(&lServer, &lConfig) == ESP_OK) {
+		// Set URI handlers
+		httpd_register_uri_handler(lServer, &hGetSwitchCtrl);
+		return lServer;
+	}
 
-        /* Send back the same data */
-        httpd_resp_send_chunk(req, buf, ret);
-        remaining -= ret;
-
-        /* Log data received */
-        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-        ESP_LOGI(TAG, "%.*s", ret, buf);
-        ESP_LOGI(TAG, "====================================");
-    }
-
-    // End response
-    httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+	ESP_LOGI(TAG, "Error starting server!");
+	return NULL;
 }
 
-httpd_uri_t echo = {
-    .uri       = "/echo",
-    .method    = HTTP_POST,
-    .handler   = echo_post_handler,
-    .user_ctx  = NULL
-};
-
-/* An HTTP PUT handler. This demonstrates realtime
- * registration and deregistration of URI handlers
- */
-esp_err_t ctrl_put_handler(httpd_req_t *req)
-{
-    char buf;
-    int ret;
-
-    if ((ret = httpd_req_recv(req, &buf, 1)) <= 0) {
-        if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-            httpd_resp_send_408(req);
-        }
-        return ESP_FAIL;
-    }
-
-    if (buf == '0') {
-        /* Handler can be unregistered using the uri string */
-        ESP_LOGI(TAG, "Unregistering /hello and /echo URIs");
-        httpd_unregister_uri(req->handle, "/hello");
-        httpd_unregister_uri(req->handle, "/echo");
-    }
-    else {
-        ESP_LOGI(TAG, "Registering /hello and /echo URIs");
-        httpd_register_uri_handler(req->handle, &hello);
-        httpd_register_uri_handler(req->handle, &echo);
-    }
-
-    /* Respond with empty body */
-    httpd_resp_send(req, NULL, 0);
-    return ESP_OK;
+void sStopServer(httpd_handle_t pServer) {
+	// Stop the httpd server
+	httpd_stop(pServer);
 }
 
-httpd_uri_t ctrl = {
-    .uri       = "/ctrl",
-    .method    = HTTP_PUT,
-    .handler   = ctrl_put_handler,
-    .user_ctx  = NULL
-};
+static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
+	httpd_handle_t *lServer;
+	system_event_info_t *lInfo;
 
-httpd_handle_t start_webserver(void)
-{
-    httpd_handle_t server = NULL;
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+	lServer = (httpd_handle_t*) pCtx;
+	lInfo = &pEvent->event_info;
 
-    // Start the httpd server
-    ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
-    if (httpd_start(&server, &config) == ESP_OK) {
-        // Set URI handlers
-        ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &hello);
-        httpd_register_uri_handler(server, &echo);
-        httpd_register_uri_handler(server, &ctrl);
-        return server;
-    }
+	switch (pEvent->event_id) {
+	case SYSTEM_EVENT_STA_START:
+		printf("Station Start\n");
+		ESP_ERROR_CHECK(esp_wifi_connect());
+		break;
+	case SYSTEM_EVENT_STA_GOT_IP:
+		printf("Station got IP '%s'\n", ip4addr_ntoa(&pEvent->event_info.got_ip.ip_info.ip));
 
-    ESP_LOGI(TAG, "Error starting server!");
-    return NULL;
+		/* Start the web server */
+		if (*lServer == NULL) {
+			*lServer = sStartServer();
+		}
+		break;
+	case SYSTEM_EVENT_STA_DISCONNECTED:
+		printf("Station disconnected\n");
+		printf("Disconnect reason : %d\n", lInfo->disconnected.reason);
+		if (lInfo->disconnected.reason == WIFI_REASON_BASIC_RATE_NOT_SUPPORT) {
+			/*Switch to 802.11 bgn mode */
+			esp_wifi_set_protocol(ESP_IF_WIFI_STA,
+					WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
+		}
+		ESP_ERROR_CHECK(esp_wifi_connect());
+
+		/* Stop the web server */
+		if (*lServer) {
+			sStopServer(*lServer);
+			*lServer = NULL;
+		}
+		break;
+	default:
+		break;
+	}
+	return ESP_OK;
 }
 
-void stop_webserver(httpd_handle_t server)
-{
-    // Stop the httpd server
-    httpd_stop(server);
+static void sInitialise_wifi(void *pArg) {
+	wifi_init_config_t lConfig;
+	wifi_config_t lWifiConfig;
+
+	tcpip_adapter_init();
+	ESP_ERROR_CHECK(esp_event_loop_init(hEventHandler, pArg));
+	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
+	ESP_ERROR_CHECK(esp_wifi_init(&lConfig));
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "JEHok-2",
+			.password = "VoulezVousCoucherAvecMoi", }, };
+	printf("Setting WiFi Station on SSID %s...\n", lWifiConfig.sta.ssid);
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig));
+	ESP_ERROR_CHECK(esp_wifi_start());
 }
 
-static esp_err_t event_handler(void *ctx, system_event_t *event)
-{
-    httpd_handle_t *server = (httpd_handle_t *) ctx;
-    /* For accessing reason codes in case of disconnection */
-    system_event_info_t *info = &event->event_info;
+void tcbHeartBeat(TimerHandle_t pTimer) {
+	static int lTest;
 
-    switch(event->event_id) {
-    case SYSTEM_EVENT_STA_START:
-        ESP_LOGI(TAG, "SYSTEM_EVENT_STA_START");
-        ESP_ERROR_CHECK(esp_wifi_connect());
-        break;
-    case SYSTEM_EVENT_STA_GOT_IP:
-        ESP_LOGI(TAG, "SYSTEM_EVENT_STA_GOT_IP");
-        ESP_LOGI(TAG, "Got IP: '%s'",
-                ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+	mStartCounter++;
+	if (mStartCounter > 15){
+		mConnected = true;
+	}
+	if (mConnected) {
+		lTest = (mStartCounter / 10) * 10;
+		if (mStartCounter == lTest) {
+			printf("Counting....%d\n", mStartCounter);
+		}
+	} else {
+		printf("Counting....%d\n", mStartCounter);
+	}
 
-        /* Start the web server */
-        if (*server == NULL) {
-            *server = start_webserver();
-        }
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        ESP_LOGI(TAG, "SYSTEM_EVENT_STA_DISCONNECTED");
-        ESP_LOGE(TAG, "Disconnect reason : %d", info->disconnected.reason);
-        if (info->disconnected.reason == WIFI_REASON_BASIC_RATE_NOT_SUPPORT) {
-            /*Switch to 802.11 bgn mode */
-            esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
-        }
-        ESP_ERROR_CHECK(esp_wifi_connect());
-
-        /* Stop the web server */
-        if (*server) {
-            stop_webserver(*server);
-            *server = NULL;
-        }
-        break;
-    default:
-        break;
-    }
-    return ESP_OK;
+	if (mStartCounter == STARTPAUSE){
+		printf("SDK version:%s\n", esp_get_idf_version());
+	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
+		sInitialise_wifi(&mServer);
+/*		ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
+		ets_uart_printf("Flash chip id: %x\r\n", spi_flash_get_id());
+		switch (system_upgrade_userbin_check()){
+		case UPGRADE_FW_BIN1:
+			ets_uart_printf("Image %d\r\n", 1);
+			break;
+		case UPGRADE_FW_BIN2:
+			ets_uart_printf("Image %d\r\n", 2);
+			break;
+		default:
+			ets_uart_printf("Unknown image\r\n");
+			break;
+		}
+		ets_uart_printf("Start configuration\r\n");
+		system_os_post(0, EventStartSetup, 0); */
+	}
 }
 
-static void initialise_wifi(void *arg)
-{
-    tcpip_adapter_init();
-    ESP_ERROR_CHECK(esp_event_loop_init(event_handler, arg));
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = EXAMPLE_WIFI_SSID,
-            .password = EXAMPLE_WIFI_PASS,
-        },
-    };
-    ESP_LOGI(TAG, "Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-}
-
-void app_main()
-{
-    static httpd_handle_t server = NULL;
-    ESP_ERROR_CHECK(nvs_flash_init());
-    initialise_wifi(&server);
+void app_main() {
+	ESP_ERROR_CHECK(nvs_flash_init());
+	mHartBeat = xTimerCreate("HartBeat", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, tcbHeartBeat);
+	mStartCounter = 0;
+	mConnected = false;
+	xTimerStart(mHartBeat, 100);
 }

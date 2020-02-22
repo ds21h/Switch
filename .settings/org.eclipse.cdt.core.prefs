@@ -1,0 +1,12 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/BATCH_BUILD/delimiter=;
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/BATCH_BUILD/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/BATCH_BUILD/value=1
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/IDF_PATH/delimiter=;
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/IDF_PATH/operation=replace
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/IDF_PATH/value=D\:/Source/ESP_IDF/msys32/home/Jan/esp/ESP8266_RTOS_SDK
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/PATH/delimiter=;
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/PATH/operation=replace
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/PATH/value=D\:\\Source\\ESP_IDF\\msys32\\usr\\bin;D\:\\Source\\ESP_IDF\\msys32\\mingw32\\bin;D\:\\Source\\ESP_IDF\\msys32\\opt\\xtensa-lx106-elf\\bin
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/append=true
+environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.884337827/appendContributed=true
