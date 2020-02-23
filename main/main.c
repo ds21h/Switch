@@ -3,67 +3,17 @@
 #include "FreeRTOS/timers.h"
 #include <esp_wifi.h>
 #include <esp_event_loop.h>
-#include "esp_log.h"
 #include <nvs_flash.h>
 #include <sys/param.h>
 #include "esp_system.h"
 #include "esp_spi_flash.h"
-#include "message.h"
-
 #include <esp_http_server.h>
-
-static const char *TAG = "Switch";
+#include "server.h"
 
 TimerHandle_t mHartBeat;
 static int mStartCounter;
 bool mConnected;
 httpd_handle_t mServer = NULL;
-
-/* An HTTP GET handler */
-esp_err_t hGetSwitch(httpd_req_t *pReq) {
-	size_t lLength;
-    char*  lBuffer;
-
-    lBuffer = (char *)malloc(BUFFER_LENGTH);
-	memset(lBuffer, 0, BUFFER_LENGTH);
-
-	lLength = httpd_req_get_url_query_len(pReq) + 1;
-	if (lLength > 1) {
-		httpd_resp_set_status(pReq, HTTPD_400);
-		strcpy(lBuffer, HTTPD_400);
-	} else {
-		xMessSwitchStatus(lBuffer);
-//		strcpy(lBuffer, "Dit is de switch status");
-	}
-	httpd_resp_send(pReq, lBuffer, strlen(lBuffer));
-	free(lBuffer);
-	return ESP_OK;
-}
-
-httpd_uri_t hGetSwitchCtrl = { .uri = "/switch", .method = HTTP_GET, .handler =
-		hGetSwitch, .user_ctx = NULL };
-
-httpd_handle_t sStartServer(void) {
-	httpd_handle_t lServer = NULL;
-	httpd_config_t lConfig;
-
-	lConfig = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
-	// Start the httpd server
-	printf("Starting server on port: '%d'\n", lConfig.server_port);
-	if (httpd_start(&lServer, &lConfig) == ESP_OK) {
-		// Set URI handlers
-		httpd_register_uri_handler(lServer, &hGetSwitchCtrl);
-		return lServer;
-	}
-
-	ESP_LOGI(TAG, "Error starting server!");
-	return NULL;
-}
-
-void sStopServer(httpd_handle_t pServer) {
-	// Stop the httpd server
-	httpd_stop(pServer);
-}
 
 static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
 	httpd_handle_t *lServer;
@@ -79,10 +29,11 @@ static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
 		break;
 	case SYSTEM_EVENT_STA_GOT_IP:
 		printf("Station got IP '%s'\n", ip4addr_ntoa(&pEvent->event_info.got_ip.ip_info.ip));
+		mConnected = true;
 
 		/* Start the web server */
 		if (*lServer == NULL) {
-			*lServer = sStartServer();
+			*lServer = xStartServer();
 		}
 		break;
 	case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -94,10 +45,11 @@ static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
 					WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
 		}
 		ESP_ERROR_CHECK(esp_wifi_connect());
+		mConnected = false;
 
 		/* Stop the web server */
 		if (*lServer) {
-			sStopServer(*lServer);
+			xStopServer(*lServer);
 			*lServer = NULL;
 		}
 		break;
@@ -128,9 +80,6 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	static int lTest;
 
 	mStartCounter++;
-	if (mStartCounter > 15){
-		mConnected = true;
-	}
 	if (mConnected) {
 		lTest = (mStartCounter / 10) * 10;
 		if (mStartCounter == lTest) {

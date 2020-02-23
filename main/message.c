@@ -10,6 +10,7 @@
 #include "cJSON.h"
 #include "setting.h"
 #include "esp_system.h"
+#include "switch.h"
 
 void xMessSwitchStatus(char * pBuffer){
 	cJSON *lReply;
@@ -37,7 +38,7 @@ void xMessSwitchStatus(char * pBuffer){
 	cJSON_AddItemToObject(lReply, "descr", lDescr);
 	lModel = cJSON_CreateNumber(xSettingSwitchModel());
 	cJSON_AddItemToObject(lReply, "model", lModel);
-	lStatus = cJSON_CreateString("on");
+	lStatus = cJSON_CreateString((xSwitchStatus()) ? "on" : "off");
 	cJSON_AddItemToObject(lReply, "status", lStatus);
 	cJSON_PrintPreallocated(lReply, pBuffer, BUFFER_LENGTH, false);
 	cJSON_Delete(lReply);
