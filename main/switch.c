@@ -12,3 +12,17 @@ bool xSwitchStatus(){
 	return mSwitchStatus;
 }
 
+void sSwitchSet(bool pValue){
+	mSwitchStatus = pValue;
+
+//	GPIO_OUTPUT_SET(mSwitchPort, mSwitchStatus ? mOn : mOff);
+}
+
+void xSwitchOn(){
+	sSwitchSet(true);
+//	xInitOff(pAutoOff);
+}
+
+void xSwitchOff(){
+	sSwitchSet(false);
+}

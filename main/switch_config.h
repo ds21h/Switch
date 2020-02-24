@@ -11,7 +11,15 @@
 #define VERSION			"v3.0.0"
 
 #define STARTPAUSE		10
-#define BUFFER_LENGTH 	1024
+
+#define RESP200 		"200 OK"
+#define RESP400 		"400 Bad Request"
+#define RESP408 		"408 Request Timeout"
+#define RESP413 		"413 Payload Too Large"
+#define RESP499 		"499 Unknown Error"
+#define RESP500 		"500 Internal Server Error"
+
+#define TYPE_JSON		"application/json"
 
 typedef unsigned char   bool;
 #define false			0

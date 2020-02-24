@@ -9,5 +9,7 @@
 #define MAIN_SWITCH_H_
 
 bool xSwitchStatus();
+void xSwitchOn();
+void xSwitchOff();
 
 #endif /* MAIN_SWITCH_H_ */
