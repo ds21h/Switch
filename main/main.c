@@ -9,9 +9,11 @@
 #include "esp_spi_flash.h"
 #include <esp_http_server.h>
 #include "server.h"
+#include "switch.h"
+#include "setting.h"
 
 TimerHandle_t mHartBeat;
-static int mStartCounter;
+int mStartCounter;
 bool mConnected;
 httpd_handle_t mServer = NULL;
 
@@ -19,6 +21,7 @@ static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
 	httpd_handle_t *lServer;
 	system_event_info_t *lInfo;
 
+	esp_err_t lEffe = ESP_OK;
 	lServer = (httpd_handle_t*) pCtx;
 	lInfo = &pEvent->event_info;
 
@@ -92,6 +95,8 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	if (mStartCounter == STARTPAUSE){
 		printf("SDK version:%s\n", esp_get_idf_version());
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
+	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
+	    xSettingInit();
 		sInitialise_wifi(&mServer);
 /*		ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
 		ets_uart_printf("Flash chip id: %x\r\n", spi_flash_get_id());
@@ -113,6 +118,7 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 
 void app_main() {
 	ESP_ERROR_CHECK(nvs_flash_init());
+	xSwitchInit();
 	mHartBeat = xTimerCreate("HartBeat", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, tcbHeartBeat);
 	mStartCounter = 0;
 	mConnected = false;

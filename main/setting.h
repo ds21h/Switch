@@ -11,5 +11,6 @@
 const char* xSettingName();
 const char* xSettingDescription();
 uint8 xSettingSwitchModel();
+void xSettingInit();
 
 #endif /* MAIN_SETTING_H_ */
