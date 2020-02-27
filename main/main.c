@@ -21,7 +21,6 @@ static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
 	httpd_handle_t *lServer;
 	system_event_info_t *lInfo;
 
-	esp_err_t lEffe = ESP_OK;
 	lServer = (httpd_handle_t*) pCtx;
 	lInfo = &pEvent->event_info;
 
