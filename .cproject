@@ -3,9 +3,9 @@
     	
     <storageModule moduleId="org.eclipse.cdt.core.settings">
         		
-        <cconfiguration id="cdt.managedbuild.toolchain.gnu.cygwin.base.884337827">
+        <cconfiguration id="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173">
             			
-            <storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.cygwin.base.884337827" moduleId="org.eclipse.cdt.core.settings" name="Default">
+            <storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173" moduleId="org.eclipse.cdt.core.settings" name="Default">
                 				
                 <externalSettings/>
                 				
@@ -29,41 +29,59 @@
             			
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">
                 				
-                <configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cygwin.base.884337827" name="Default" optionalBuildProperties="" parent="org.eclipse.cdt.build.core.emptycfg">
+                <configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173" name="Default" optionalBuildProperties="org.eclipse.cdt.docker.launcher.containerbuild.property.selectedvolumes=,org.eclipse.cdt.docker.launcher.containerbuild.property.volumes=" parent="org.eclipse.cdt.build.core.emptycfg">
                     					
-                    <folderInfo id="cdt.managedbuild.toolchain.gnu.cygwin.base.884337827.1855281586" name="/" resourcePath="">
+                    <folderInfo id="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173.307321275" name="/" resourcePath="">
                         						
-                        <toolChain id="cdt.managedbuild.toolchain.gnu.cygwin.base.827081535" name="Cygwin GCC" superClass="cdt.managedbuild.toolchain.gnu.cygwin.base">
+                        <toolChain id="cdt.managedbuild.toolchain.gnu.cygwin.base.1558545652" name="Cygwin GCC" superClass="cdt.managedbuild.toolchain.gnu.cygwin.base">
                             							
-                            <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.Cygwin_PE64" id="cdt.managedbuild.target.gnu.platform.cygwin.base.387531719" name="Debug Platform" osList="win32" superClass="cdt.managedbuild.target.gnu.platform.cygwin.base"/>
+                            <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.Cygwin_PE64" id="cdt.managedbuild.target.gnu.platform.cygwin.base.1064784998" name="Debug Platform" osList="win32" superClass="cdt.managedbuild.target.gnu.platform.cygwin.base"/>
                             							
-                            <builder arguments="${IDF_PATH}/tools/windows/eclipse_make.py" command="python" id="cdt.managedbuild.target.gnu.builder.cygwin.base.1619986054" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="5" superClass="cdt.managedbuild.target.gnu.builder.cygwin.base"/>
+                            <builder arguments="${IDF_PATH}/tools/windows/eclipse_make.py" command="python" id="cdt.managedbuild.target.gnu.builder.cygwin.base.1417554032" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.cygwin.base"/>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.assembler.cygwin.base.1414266798" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.cygwin.base">
+                            <tool id="cdt.managedbuild.tool.gnu.assembler.cygwin.base.319083819" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.cygwin.base">
                                 								
-                                <inputType id="cdt.managedbuild.tool.gnu.assembler.input.1681342783" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+                                <inputType id="cdt.managedbuild.tool.gnu.assembler.input.632203327" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
                                 							
                             </tool>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.archiver.cygwin.base.1511818738" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.cygwin.base"/>
+                            <tool id="cdt.managedbuild.tool.gnu.archiver.cygwin.base.1300518539" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.cygwin.base"/>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base.2069285411" name="Cygwin C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base">
+                            <tool id="cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base.1934623088" name="Cygwin C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base">
                                 								
-                                <inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin.183967618" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin"/>
+                                <inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin.1245460319" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin"/>
                                 							
                             </tool>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.590708387" name="Cygwin C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base">
+                            <tool id="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.862474073" name="Cygwin C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base">
                                 								
-                                <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.1281037371" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
+                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.2123444458" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\freertos\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp8266\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_event\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\nvs_flash\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\spi_flash\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_http_server\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_common\include&quot;"/>
+                                    								
+                                </option>
+                                								
+                                <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.137251921" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
                                 							
                             </tool>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.c.linker.cygwin.base.1773688771" name="Cygwin C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.cygwin.base"/>
+                            <tool id="cdt.managedbuild.tool.gnu.c.linker.cygwin.base.1948030178" name="Cygwin C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.cygwin.base"/>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.base.1665344083" name="Cygwin C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.base">
+                            <tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.base.386405294" name="Cygwin C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.base">
                                 								
-                                <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1019874873" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+                                <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.13775310" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
                                     									
                                     <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
                                     									
@@ -89,7 +107,7 @@
     	
     <storageModule moduleId="cdtBuildSystem" version="4.0.0">
         		
-        <project id="Switch.null.528100135" name="Switch"/>
+        <project id="Switch.null.1910000083" name="Switch"/>
         	
     </storageModule>
     	
@@ -115,7 +133,19 @@
             		
         </scannerConfigBuildInfo>
         		
+        <scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173;cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173.307321275;cdt.managedbuild.tool.gnu.cpp.compiler.cygwin.base.1934623088;cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin.1245460319">
+            			
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+            		
+        </scannerConfigBuildInfo>
+        		
         <scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cygwin.base.884337827;cdt.managedbuild.toolchain.gnu.cygwin.base.884337827.1855281586;cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.590708387;cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.1281037371">
+            			
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+            		
+        </scannerConfigBuildInfo>
+        		
+        <scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173;cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173.307321275;cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.862474073;cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.137251921">
             			
             <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
             		
@@ -129,13 +159,45 @@
         		
         <buildTargets>
             			
-            <target name="flash" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+            <target name="Flash" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
                 				
                 <buildCommand>python</buildCommand>
                 				
-                <buildArguments>${IDF_PATH}/tools/windows/eclipse_make.py -j5</buildArguments>
+                <buildArguments>${IDF_PATH}/tools/windows/eclipse_make.py -j4</buildArguments>
                 				
                 <buildTarget>flash</buildTarget>
+                				
+                <stopOnError>true</stopOnError>
+                				
+                <useDefaultCommand>true</useDefaultCommand>
+                				
+                <runAllBuilders>true</runAllBuilders>
+                			
+            </target>
+            			
+            <target name="Clean" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+                				
+                <buildCommand>python</buildCommand>
+                				
+                <buildArguments>${IDF_PATH}/tools/windows/eclipse_make.py -j4</buildArguments>
+                				
+                <buildTarget>clean</buildTarget>
+                				
+                <stopOnError>true</stopOnError>
+                				
+                <useDefaultCommand>true</useDefaultCommand>
+                				
+                <runAllBuilders>true</runAllBuilders>
+                			
+            </target>
+            			
+            <target name="Build" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+                				
+                <buildCommand>python</buildCommand>
+                				
+                <buildArguments>${IDF_PATH}/tools/windows/eclipse_make.py -j4</buildArguments>
+                				
+                <buildTarget/>
                 				
                 <stopOnError>true</stopOnError>
                 				

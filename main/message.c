@@ -4,14 +4,14 @@
  *  Created on: 21 feb. 2020
  *      Author: Jan
  */
+#include <ctype.h>
+#include <string.h>
 #include "switch_config.h"
 #include "message.h"
-#include <string.h>
 #include "cJSON.h"
-#include "setting.h"
 #include "esp_system.h"
 #include <esp_http_server.h>
-#include <ctype.h>
+#include "setting.h"
 #include "switch.h"
 
 void xMessSwitchStatus(char * pBuffer, const int pLength){
@@ -155,12 +155,12 @@ static uint8 sHexToInt(char pHex) {
 }
 
 bool sParseIp(const char *pIpString, uint8 pIp[4]) {
-	const char *lPos;
+	const int8 *lPos;
 	int lSeqNmbr;
 	bool lInit;
 	bool lResult;
 
-	lPos = pIpString;
+	lPos = (int8 *)pIpString;
 	lSeqNmbr = 0;
 	lInit = true;
 	lResult = true;
@@ -187,6 +187,9 @@ bool sParseIp(const char *pIpString, uint8 pIp[4]) {
 			}
 		}
 		lPos++;
+	}
+	if (lSeqNmbr != 3){
+		lResult = false;
 	}
 	return lResult;
 }
@@ -272,14 +275,14 @@ uint16 xMessSetSetting(char * pBuffer, const int pLength){
 		    }
 		    lItem = cJSON_GetObjectItem(lRequest, "loglevel");
 		    if (cJSON_IsNumber(lItem)){
-		    	xSettingSetSwitchModel(lItem->valueint);
+		    	xSettingSetLogLevel(lItem->valueint);
 		    }
 		    lItem = cJSON_GetObjectItem(lRequest, "button");
 		    if (cJSON_IsString(lItem) && (lItem->valuestring != NULL)){
-		    	if (strcmp(lItem->valuestring, "on")){
+		    	if (strcmp(lItem->valuestring, "on") == 0){
 		    		xSettingSetButton(true);
 		    	} else {
-			    	if (strcmp(lItem->valuestring, "off")){
+			    	if (strcmp(lItem->valuestring, "off") == 0){
 			    		xSettingSetButton(false);
 			    	}
 		    	}

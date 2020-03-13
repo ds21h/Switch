@@ -12,13 +12,7 @@
 
 char mSsId[32];
 char mPassword[64];
-union{
-	struct{
-		uint8 sPrefix[2];
-		uint8 sMac[6];
-	} uMac;
-	uint64 uMacStor;
-} mMac;
+uint8 mMac[6];
 char mName[32];
 char mDescr[64];
 uint8 mSwitchModel;
@@ -49,11 +43,11 @@ void xSettingSetPassword(char * pPassword){
 }
 
 void xSettingMacDisp(char *pMac){
-	sprintf(pMac, "%02x:%02x:%02x:%02x:%02x:%02x", mMac.uMac.sMac[0], mMac.uMac.sMac[1], mMac.uMac.sMac[2], mMac.uMac.sMac[3], mMac.uMac.sMac[4], mMac.uMac.sMac[5]);
+	sprintf(pMac, "%02x:%02x:%02x:%02x:%02x:%02x", mMac[0], mMac[1], mMac[2], mMac[3], mMac[4], mMac[5]);
 }
 
 void xSettingSetMac(uint8 * pMac){
-	memcpy(mMac.uMac.sMac, pMac, sizeof(mMac.uMac.sMac));
+	memcpy(mMac, pMac, sizeof(mMac));
 }
 
 const char* xSettingName(){
@@ -113,11 +107,14 @@ void xSettingSetAutoOff(uint32 pAutoOff){
 }
 
 void xSettingServerIpDisp(char *pIp){
-	sprintf(pIp, "%d.%d.%d.%d", (mServerIP >> 24) & 0xFF, (mServerIP >> 16) & 0xFF, (mServerIP >>  8) & 0xFF, (mServerIP) & 0xFF);
+	uint8 lIP[4];
+
+	memcpy (lIP, &mServerIP, sizeof(lIP));
+	sprintf(pIp, "%d.%d.%d.%d", lIP[0], lIP[1], lIP[2], lIP[3]);
 }
 
 void xSettingSetServerIp(uint8 * pIP){
-	memcpy(mServerIP, pIP, sizeof(mServerIP));
+	memcpy(&mServerIP, pIP, sizeof(mServerIP));
 }
 
 uint32 xSettingServerPort(){
@@ -128,68 +125,307 @@ void xSettingSetServerPort(uint32 pPort){
 	mServerPort = pPort;
 }
 
-void xSettingWrite(){
+bool sTestStr(esp_err_t pResult, char * pValue1, char * pValue2){
+	bool lResult;
 
+	if (pResult == ESP_OK){
+		if (strcmp(pValue1, pValue2) == 0){
+			lResult = false;
+		} else {
+			lResult = true;
+		}
+	} else {
+		if (pResult == ESP_ERR_NVS_NOT_FOUND){
+			lResult = true;
+		} else {
+			lResult = false;
+		}
+	}
+	return lResult;
+}
+
+bool sTestBlob(esp_err_t pResult, void * pValue1, void * pValue2, uint32 pLength){
+	bool lResult;
+
+	if (pResult == ESP_OK){
+		if (memcmp(pValue1, pValue2, pLength) == 0){
+			lResult = false;
+		} else {
+			lResult = true;
+		}
+	} else {
+		if (pResult == ESP_ERR_NVS_NOT_FOUND){
+			lResult = true;
+		} else {
+			lResult = false;
+		}
+	}
+	return lResult;
+}
+
+bool sTestU8(esp_err_t pResult, uint8 pValue1, uint8 pValue2){
+	bool lResult;
+
+	if (pResult == ESP_OK){
+		if (pValue1 == pValue2){
+			lResult = false;
+		} else {
+			lResult = true;
+		}
+	} else {
+		if (pResult == ESP_ERR_NVS_NOT_FOUND){
+			lResult = true;
+		} else {
+			lResult = false;
+		}
+	}
+	return lResult;
+}
+
+bool sTestU32(esp_err_t pResult, uint32 pValue1, uint32 pValue2){
+	bool lResult;
+
+	if (pResult == ESP_OK){
+		if (pValue1 == pValue2){
+			lResult = false;
+		} else {
+			lResult = true;
+		}
+	} else {
+		if (pResult == ESP_ERR_NVS_NOT_FOUND){
+			lResult = true;
+		} else {
+			lResult = false;
+		}
+	}
+	return lResult;
+}
+
+void xSettingWrite(){
+	nvs_handle lHandle;
+	esp_err_t lResult;
+	union {
+		char sString[64];
+		uint8 sMac[6];
+		uint8 sU8;
+		uint32 sU32;
+	} lInput;
+	size_t lLength;
+	uint8 lCount;
+
+	lResult = nvs_open("switch", NVS_READWRITE, &lHandle);
+	if (lResult == ESP_OK){
+		printf("NVS opened for write\n");
+		lCount = 0;
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_str(lHandle, "ssid", lInput.sString, &lLength);
+		printf("SSID read, Error code : %d\n", lResult);
+		if (sTestStr(lResult, mSsId, lInput.sString)){
+			lResult = nvs_set_str(lHandle, "ssid", mSsId);
+			printf("Write SSID. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_str(lHandle, "passwrd", lInput.sString, &lLength);
+		printf("Password read, Error code : %d\n", lResult);
+		if (sTestStr(lResult, mPassword, lInput.sString)){
+			lResult = nvs_set_str(lHandle, "passwrd", mPassword);
+			printf("Write Password. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_blob(lHandle, "mac", lInput.sMac, &lLength);
+		printf("MAC read, Error code : %d\n", lResult);
+		if (sTestBlob(lResult, mMac, lInput.sMac, sizeof(mMac))){
+			lResult = nvs_set_blob(lHandle, "mac", mMac, sizeof(mMac));
+			printf("Write MAC. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_str(lHandle, "name", lInput.sString, &lLength);
+		printf("Name read, Error code : %d\n", lResult);
+		if (sTestStr(lResult, mName, lInput.sString)){
+			lResult = nvs_set_str(lHandle, "name", mName);
+			printf("Write Name. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_str(lHandle, "descr", lInput.sString, &lLength);
+		printf("Description read, Error code : %d\n", lResult);
+		if (sTestStr(lResult, mName, lInput.sString)){
+			lResult = nvs_set_str(lHandle, "descr", mDescr);
+			printf("Write Description. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_u8(lHandle, "model", &lInput.sU8);
+		printf("Model read, Error code : %d\n", lResult);
+		if (sTestU8(lResult, mSwitchModel, lInput.sU8)){
+			lResult = nvs_set_u8(lHandle, "model", mSwitchModel);
+			printf("Write Model. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_u8(lHandle, "loglevel", &lInput.sU8);
+		printf("LogLevel read, Error code : %d\n", lResult);
+		if (sTestU8(lResult, mLogLevel, lInput.sU8)){
+			lResult = nvs_set_u8(lHandle, "loglevel", mLogLevel);
+			printf("Write LogLevel. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_u8(lHandle, "button", &lInput.sU8);
+		printf("Button read, Error code : %d\n", lResult);
+		if (sTestU8(lResult, mButton, lInput.sU8)){
+			lResult = nvs_set_u8(lHandle, "button", mButton);
+			printf("Write Button. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_u32(lHandle, "autooff", &lInput.sU32);
+		printf("AutoOff read, Error code : %d\n", lResult);
+		if (sTestU32(lResult, mAutoOff, lInput.sU32)){
+			lResult = nvs_set_u32(lHandle, "autooff", mAutoOff);
+			printf("Write AutoOff. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_u32(lHandle, "serverip", &lInput.sU32);
+		printf("ServerIP read, Error code : %d\n", lResult);
+		if (sTestU32(lResult, mServerIP, lInput.sU32)){
+			lResult = nvs_set_u32(lHandle, "serverip", mServerIP);
+			printf("Write ServerIP. Result %d\n", lResult);
+			lCount++;
+		}
+
+		memset(&lInput, 0, sizeof(lInput));
+		lLength = sizeof(lInput);
+		lResult = nvs_get_u32(lHandle, "serverport", &lInput.sU32);
+		printf("ServerPort read, Error code : %d\n", lResult);
+		if (sTestU32(lResult, mServerPort, lInput.sU32)){
+			lResult = nvs_set_u32(lHandle, "serverport", mServerPort);
+			printf("Write ServerPort. Result %d\n", lResult);
+			lCount++;
+		}
+
+		if (lCount > 0){
+			lResult = nvs_commit(lHandle);
+			printf("Commit. Result %d\n", lResult);
+		}
+
+		nvs_close(lHandle);
+		printf("Close. Result %d\n", lResult);
+	}
+}
+
+void xSettingReset(){
+	memset(mSsId, 0, sizeof(mSsId));
+	memset(mPassword, 0, sizeof(mPassword));
+	memset(mMac, 0, sizeof(mMac));
+	memset(mName, 0, sizeof(mName));
+	memset(mDescr, 0, sizeof(mDescr));
+	mSwitchModel = 1;
+	mLogLevel = 1;
+	mButton = true;
+	mAutoOff = 43200;
+	mServerIP = 0;
+	mServerPort = 0;
 }
 
 void xSettingInit(){
 	nvs_handle lHandle;
 	esp_err_t lResult;
+	size_t lLength;
 
+	printf("Init setting\n");
 	lResult = nvs_open("switch", NVS_READONLY, &lHandle);
 	if (lResult == ESP_OK){
-		lResult = nvs_get_str(lHandle, "ssid", mSsId, (size_t *)sizeof(mSsId));
+		printf("NVS opened\n");
+		lLength = sizeof(mSsId);
+		lResult = nvs_get_str(lHandle, "ssid", mSsId, &lLength);
+		printf("SSID read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			memset(mSsId, 0, sizeof(mSsId));
 		}
-		lResult = nvs_get_str(lHandle, "passwrd", mPassword, (size_t *)sizeof(mPassword));
+		lLength = sizeof(mPassword);
+		lResult = nvs_get_str(lHandle, "passwrd", mPassword, &lLength);
+		printf("Password read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			memset(mPassword, 0, sizeof(mPassword));
 		}
-		lResult = nvs_get_u64(lHandle, "mac", &mMac.uMacStor);
+		lLength = sizeof(mMac);
+		lResult = nvs_get_blob(lHandle, "mac", mMac, &lLength);
+		printf("MAC read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
-			mMac.uMacStor = 0;
+			memset(mMac, 0, sizeof(mMac));
 		}
-		lResult = nvs_get_str(lHandle, "name", mName, (size_t *)sizeof(mName));
+		lLength = sizeof(mName);
+		lResult = nvs_get_str(lHandle, "name", mName, &lLength);
+		printf("Name read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			memset(mName, 0, sizeof(mName));
 		}
-		lResult = nvs_get_str(lHandle, "descr", mDescr, (size_t *)sizeof(mDescr));
+		lLength = sizeof(mDescr);
+		lResult = nvs_get_str(lHandle, "descr", mDescr, &lLength);
+		printf("Description read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			memset(mDescr, 0, sizeof(mDescr));
 		}
 		lResult = nvs_get_u8(lHandle, "model", &mSwitchModel);
+		printf("Model read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			mSwitchModel = 1;
 		}
 		lResult = nvs_get_u8(lHandle, "loglevel", &mLogLevel);
+		printf("LogLevel read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			mLogLevel = 1;
 		}
 		lResult = nvs_get_u8(lHandle, "button", (uint8 *)&mButton);
+		printf("LogLevel read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			mButton = true;
 		}
 		lResult = nvs_get_u32(lHandle, "autooff", &mAutoOff);
+		printf("AutoOff read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			mAutoOff = 43200;
 		}
 		lResult = nvs_get_u32(lHandle, "serverip", &mServerIP);
+		printf("ServerIP read, Error code : %d\n", lResult);
+		if (lResult != ESP_OK){
+			mServerIP = 0;
+		}
 		lResult = nvs_get_u32(lHandle, "serverport", &mServerPort);
+		printf("ServerPort read, Error code : %d\n", lResult);
+		if (lResult != ESP_OK){
+			mServerPort = 0;
+		}
+		printf("NVS read, closing\n");
 		nvs_close(lHandle);
-	}
-
-	void xSettingReset(){
-		memset(mSsId, 0, sizeof(mSsId));
-		memset(mPassword, 0, sizeof(mPassword));
-		memset(&mMac, 0, sizeof(mMac));
-		memset(mName, 0, sizeof(mName));
-		memset(mDescr, 0, sizeof(mDescr));
-		mSwitchModel = 1;
-		mLogLevel = 1;
-		mButton = true;
-		mAutoOff = 43200;
-		mServerIP = 0;
-		mServerPort = 0;
+		printf("NVS closed\n");
+	} else {
+		printf("NVS open failed. Error %d\n", lResult);
+		xSettingReset();
 	}
 }

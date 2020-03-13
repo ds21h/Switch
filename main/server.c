@@ -200,7 +200,7 @@ esp_err_t hPutSetting(httpd_req_t *pReq) {
 	return lResult;
 }
 
-httpd_uri_t hPutSettingCtrl = { .uri = "/switch", .method = HTTP_PUT, .handler =
+httpd_uri_t hPutSettingCtrl = { .uri = "/switch/setting", .method = HTTP_PUT, .handler =
 		hPutSetting, .user_ctx = NULL };
 
 httpd_handle_t xStartServer(void) {

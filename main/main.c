@@ -70,8 +70,10 @@ static void sInitialise_wifi(void *pArg) {
 	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
 	ESP_ERROR_CHECK(esp_wifi_init(&lConfig));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "JEHok-2",
-			.password = "VoulezVousCoucherAvecMoi", }, };
+	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "LaBurgadeX",
+			.password = "", }, };
+//	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "JEHok-2",
+//			.password = "VoulezVousCoucherAvecMoi", }, };
 	printf("Setting WiFi Station on SSID %s...\n", lWifiConfig.sta.ssid);
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig));
