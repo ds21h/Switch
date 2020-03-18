@@ -59,17 +59,19 @@
                                     									
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\freertos\include&quot;"/>
                                     									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_common\include&quot;"/>
+                                    									
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp8266\include&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_event\include&quot;"/>
                                     									
-                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\nvs_flash\include&quot;"/>
-                                    									
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\spi_flash\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\nvs_flash\include&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_http_server\include&quot;"/>
                                     									
-                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_common\include&quot;"/>
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\tcpip_adapter\include&quot;"/>
                                     								
                                 </option>
                                 								

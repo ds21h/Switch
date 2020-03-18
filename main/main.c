@@ -11,73 +11,152 @@
 #include "server.h"
 #include "switch.h"
 #include "setting.h"
+#include "tcpip_adapter.h"
 
 TimerHandle_t mHartBeat;
 int mStartCounter;
 bool mConnected;
 httpd_handle_t mServer = NULL;
 
-static esp_err_t hEventHandler(void *pCtx, system_event_t *pEvent) {
-	httpd_handle_t *lServer;
-	system_event_info_t *lInfo;
+static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEventID, void* pEventData){
+	esp_err_t lResult;
+	wifi_event_sta_disconnected_t * lDisconnect;
+	ip_event_got_ip_t * lGotIP;
+	ip4_addr_t * lIpAddress;
 
-	lServer = (httpd_handle_t*) pCtx;
-	lInfo = &pEvent->event_info;
+	if (pEventBase == IP_EVENT){
+		if (pEventID == IP_EVENT_STA_GOT_IP){
+			lGotIP = (ip_event_got_ip_t *)pEventData;
+			lIpAddress = &lGotIP->ip_info.ip;
+			printf("Station got IP '%s'\n", ip4addr_ntoa(lIpAddress));
+			mConnected = true;
 
-	switch (pEvent->event_id) {
-	case SYSTEM_EVENT_STA_START:
-		printf("Station Start\n");
-		ESP_ERROR_CHECK(esp_wifi_connect());
-		break;
-	case SYSTEM_EVENT_STA_GOT_IP:
-		printf("Station got IP '%s'\n", ip4addr_ntoa(&pEvent->event_info.got_ip.ip_info.ip));
-		mConnected = true;
-
-		/* Start the web server */
-		if (*lServer == NULL) {
-			*lServer = xStartServer();
+			/* Start the web server */
+			if (mServer == NULL) {
+				mServer = xStartServer();
+			}
 		}
-		break;
-	case SYSTEM_EVENT_STA_DISCONNECTED:
-		printf("Station disconnected\n");
-		printf("Disconnect reason : %d\n", lInfo->disconnected.reason);
-		if (lInfo->disconnected.reason == WIFI_REASON_BASIC_RATE_NOT_SUPPORT) {
-			/*Switch to 802.11 bgn mode */
-			esp_wifi_set_protocol(ESP_IF_WIFI_STA,
-					WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
-		}
-		ESP_ERROR_CHECK(esp_wifi_connect());
-		mConnected = false;
+	} else {
+		switch (pEventID){
+		case WIFI_EVENT_STA_START:
+			printf("Station Start\n");
+			lResult = esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
+			ESP_ERROR_CHECK(lResult);
+			lResult = esp_wifi_connect();
+			ESP_ERROR_CHECK(lResult);
+			break;
+		case WIFI_EVENT_STA_CONNECTED:
+			printf("Station Connected\n");
+			break;
+		case WIFI_EVENT_STA_DISCONNECTED:
+			lDisconnect = (wifi_event_sta_disconnected_t *)pEventData;
+			printf("Station disconnected\n");
+			printf("Disconnect reason : %d\n", lDisconnect->reason);
+			lResult = esp_wifi_connect();
+			ESP_ERROR_CHECK(lResult);
+			mConnected = false;
 
-		/* Stop the web server */
-		if (*lServer) {
-			xStopServer(*lServer);
-			*lServer = NULL;
+			/* Stop the web server */
+			if (mServer != NULL) {
+				xStopServer(mServer);
+				mServer = NULL;
+			}
+			break;
 		}
-		break;
-	default:
-		break;
 	}
-	return ESP_OK;
 }
 
-static void sInitialise_wifi(void *pArg) {
+static void hAPHandler(void* arg, esp_event_base_t pEventBase, int32_t pEventID, void* pEventData){
+	wifi_event_ap_staconnected_t* lConnect;
+	wifi_event_ap_stadisconnected_t* lDisconnect;
+
+	switch (pEventID){
+	case WIFI_EVENT_AP_START:
+		printf("AP Start\n");
+		break;
+	case WIFI_EVENT_AP_STACONNECTED:
+        lConnect = (wifi_event_ap_staconnected_t*) pEventData;
+		printf("station " MACSTR " join, AID=%d\n", MAC2STR(lConnect->mac), lConnect->aid);
+		break;
+	case WIFI_EVENT_AP_STADISCONNECTED:
+		lDisconnect = (wifi_event_ap_stadisconnected_t*)pEventData;
+        printf("station "MACSTR" leave, AID=%d\n", MAC2STR(lDisconnect->mac), lDisconnect->aid);
+		break;
+	}
+}
+
+void sInitialiseAP(){
 	wifi_init_config_t lConfig;
 	wifi_config_t lWifiConfig;
+	esp_err_t lResult;
+
+	lResult = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &hAPHandler, NULL);
+	ESP_ERROR_CHECK(lResult);
+	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
+	lResult = esp_wifi_init(&lConfig);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+	ESP_ERROR_CHECK(lResult);
+	lWifiConfig = (wifi_config_t){
+        .ap = {
+            .ssid = "EspSw001",
+            .ssid_len = 8,
+            .password = "EspSwSetup",
+            .max_connection = 1,
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK
+        },
+	};
+	printf("Setting WiFi AP on SSID %s...\n", lWifiConfig.ap.ssid);
+	lResult = esp_wifi_set_mode(WIFI_MODE_AP);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_wifi_set_config(ESP_IF_WIFI_AP, &lWifiConfig);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_wifi_start();
+	ESP_ERROR_CHECK(lResult);
+	mConnected = true;
+
+	/* Start the web server */
+	if (mServer == NULL) {
+		mServer = xStartServer();
+	}
+}
+
+void sInitialiseStation(){
+	wifi_init_config_t lConfig;
+	wifi_config_t lWifiConfig;
+	esp_err_t lResult;
+
+	lResult = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
+	ESP_ERROR_CHECK(lResult);
+	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
+	lResult = esp_wifi_init(&lConfig);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+	ESP_ERROR_CHECK(lResult);
+	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "JEHok-2",
+			.password = "VoulezVousCoucherAvecMoi", }, };
+	printf("Setting WiFi Station on SSID %s...\n", lWifiConfig.sta.ssid);
+	lResult = esp_wifi_set_mode(WIFI_MODE_STA);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig);
+	ESP_ERROR_CHECK(lResult);
+	lResult = esp_wifi_start();
+	ESP_ERROR_CHECK(lResult);
+}
+
+void sInitialiseWifi(){
+	esp_err_t lResult;
 
 	tcpip_adapter_init();
-	ESP_ERROR_CHECK(esp_event_loop_init(hEventHandler, pArg));
-	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
-	ESP_ERROR_CHECK(esp_wifi_init(&lConfig));
-	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "LaBurgadeX",
-			.password = "", }, };
-//	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "JEHok-2",
-//			.password = "VoulezVousCoucherAvecMoi", }, };
-	printf("Setting WiFi Station on SSID %s...\n", lWifiConfig.sta.ssid);
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig));
-	ESP_ERROR_CHECK(esp_wifi_start());
+	lResult = esp_event_loop_create_default();
+	ESP_ERROR_CHECK(lResult);
+	if (strcmp(xSettingSsId(), "") == 0){
+		sInitialiseAP();
+	} else {
+		sInitialiseStation();
+	}
 }
 
 void tcbHeartBeat(TimerHandle_t pTimer) {
@@ -98,7 +177,7 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
 	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
 	    xSettingInit();
-		sInitialise_wifi(&mServer);
+	    sInitialiseWifi();
 /*		ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
 		ets_uart_printf("Flash chip id: %x\r\n", spi_flash_get_id());
 		switch (system_upgrade_userbin_check()){
@@ -118,7 +197,15 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 }
 
 void app_main() {
-	ESP_ERROR_CHECK(nvs_flash_init());
+	esp_err_t lResult;
+
+	lResult = nvs_flash_init();
+	if (lResult == ESP_ERR_NVS_NO_FREE_PAGES) {
+	    lResult = nvs_flash_erase();
+	    ESP_ERROR_CHECK(lResult);
+	    lResult = nvs_flash_init();
+	}
+	ESP_ERROR_CHECK(lResult);
 	xSwitchInit();
 	mHartBeat = xTimerCreate("HartBeat", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, tcbHeartBeat);
 	mStartCounter = 0;
