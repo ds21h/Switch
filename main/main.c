@@ -89,6 +89,7 @@ void sInitialiseAP(){
 	wifi_init_config_t lConfig;
 	wifi_config_t lWifiConfig;
 	esp_err_t lResult;
+	uint8 lMac[6];
 
 	lResult = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &hAPHandler, NULL);
 	ESP_ERROR_CHECK(lResult);
@@ -97,15 +98,12 @@ void sInitialiseAP(){
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_wifi_set_storage(WIFI_STORAGE_RAM);
 	ESP_ERROR_CHECK(lResult);
-	lWifiConfig = (wifi_config_t){
-        .ap = {
-            .ssid = "EspSw001",
-            .ssid_len = 8,
-            .password = "EspSwSetup",
-            .max_connection = 1,
-            .authmode = WIFI_AUTH_WPA_WPA2_PSK
-        },
-	};
+	memset(&lWifiConfig, 0, sizeof(lWifiConfig));
+	esp_wifi_get_mac(ESP_IF_WIFI_AP, lMac);
+	sprintf((char *)lWifiConfig.ap.ssid, "EspSw_%02x%02x%02x%02x%02x%02x", MAC2STR(lMac));
+	sprintf((char *)lWifiConfig.ap.password, "%s", "EspSwSetup");
+	lWifiConfig.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+	lWifiConfig.ap.max_connection = 1;
 	printf("Setting WiFi AP on SSID %s...\n", lWifiConfig.ap.ssid);
 	lResult = esp_wifi_set_mode(WIFI_MODE_AP);
 	ESP_ERROR_CHECK(lResult);
@@ -125,7 +123,12 @@ void sInitialiseStation(){
 	wifi_init_config_t lConfig;
 	wifi_config_t lWifiConfig;
 	esp_err_t lResult;
-
+	wifi_sta_config_t lEffe;
+	printf("Test MAC"\n);
+	if (xSettingMacPresent()){
+		printf("Set MAC"\n);
+		esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
+	}
 	lResult = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
@@ -135,9 +138,10 @@ void sInitialiseStation(){
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_wifi_set_storage(WIFI_STORAGE_RAM);
 	ESP_ERROR_CHECK(lResult);
-	lWifiConfig = (wifi_config_t){ .sta = { .ssid = "JEHok-2",
-			.password = "VoulezVousCoucherAvecMoi", }, };
-	printf("Setting WiFi Station on SSID %s...\n", lWifiConfig.sta.ssid);
+	memset(&lWifiConfig, 0, sizeof(lWifiConfig));
+	memcpy(lWifiConfig.sta.ssid, xSettingSsId(), strlen(xSettingSsId()));
+	memcpy(lWifiConfig.sta.password, xSettingPassword(), strlen(xSettingPassword()));
+	printf("Setting WiFi Station on SSID: %s,\nPassword: %s\n", lWifiConfig.sta.ssid, lWifiConfig.sta.password);
 	lResult = esp_wifi_set_mode(WIFI_MODE_STA);
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig);

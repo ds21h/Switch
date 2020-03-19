@@ -13,6 +13,8 @@ void xSettingSetSsId(char * pSsId);
 const char* xSettingPassword();
 void xSettingSetPassword(char * pPassword);
 void xSettingMacDisp(char *pMac);
+const uint8* xSettingMac();
+bool xSettingMacPresent();
 void xSettingSetMac(uint8 * pMac);
 const char* xSettingName();
 void xSettingSetName(char * pName);
