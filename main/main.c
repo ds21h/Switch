@@ -4,6 +4,7 @@
 #include <esp_wifi.h>
 #include <esp_event_loop.h>
 #include <nvs_flash.h>
+#include "nvs.h"
 #include <sys/param.h>
 #include "esp_system.h"
 #include "esp_spi_flash.h"
@@ -12,24 +13,87 @@
 #include "switch.h"
 #include "setting.h"
 #include "tcpip_adapter.h"
+#include "main_async.h"
 
 TimerHandle_t mHartBeat;
 int mStartCounter;
 bool mConnected;
+bool mConnectionFailed;
 httpd_handle_t mServer = NULL;
+
+void sConnectionSuccess(){
+	nvs_handle lHandle;
+	esp_err_t lResult;
+	int8 lFailCount;
+
+	printf("Init setting\n");
+	lResult = nvs_open("fail", NVS_READWRITE, &lHandle);
+	if (lResult == ESP_OK){
+		printf("NVS opened\n");
+		lResult = nvs_get_i8(lHandle, "count", &lFailCount);
+		printf("Count read, Error code : %d\n", lResult);
+		if (lResult == ESP_OK){
+			if (lFailCount != 0){
+				lFailCount = 0;
+				lResult = nvs_set_i8(lHandle, "count", lFailCount);
+				printf("Count reset, Error code : %d\n", lResult);
+				lResult = nvs_commit(lHandle);
+				printf("Commit, Error code : %d\n", lResult);
+			}
+		}
+		nvs_close(lHandle);
+		printf("NVS closed\n");
+	}
+}
+
+int8 sConnectionFailed(){
+	nvs_handle lHandle;
+	esp_err_t lResult;
+	int8 lFailCount;
+	bool lReset;
+
+	printf("Set failed count\n");
+	lReset = false;
+	lResult = nvs_open("fail", NVS_READWRITE, &lHandle);
+	if (lResult == ESP_OK){
+		printf("NVS opened\n");
+		lResult = nvs_get_i8(lHandle, "count", &lFailCount);
+		printf("Count read, Error code : %d\n", lResult);
+		if (lResult != ESP_OK){
+			lFailCount = 0;
+		}
+		lFailCount++;
+		if (lFailCount > 4){
+			lReset = true;
+		}
+		lResult = nvs_set_i8(lHandle, "count", lFailCount);
+		printf("Count write, Error code : %d\n", lResult);
+		lResult = nvs_commit(lHandle);
+		printf("Commit, Error code : %d\n", lResult);
+		nvs_close(lHandle);
+		printf("NVS closed\n");
+	} else {
+		lFailCount = 0;
+	}
+	if (lReset){
+		xSettingSetSsId("");
+		xSettingWrite();
+		lFailCount = -1;
+	}
+	return lFailCount;
+}
 
 static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEventID, void* pEventData){
 	esp_err_t lResult;
 	wifi_event_sta_disconnected_t * lDisconnect;
 	ip_event_got_ip_t * lGotIP;
-	ip4_addr_t * lIpAddress;
 
 	if (pEventBase == IP_EVENT){
 		if (pEventID == IP_EVENT_STA_GOT_IP){
 			lGotIP = (ip_event_got_ip_t *)pEventData;
-			lIpAddress = &lGotIP->ip_info.ip;
-			printf("Station got IP '%s'\n", ip4addr_ntoa(lIpAddress));
+			printf("Station got IP '%s'\n", ip4addr_ntoa(&lGotIP->ip_info.ip));
 			mConnected = true;
+			sConnectionSuccess();
 
 			/* Start the web server */
 			if (mServer == NULL) {
@@ -52,8 +116,15 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 			lDisconnect = (wifi_event_sta_disconnected_t *)pEventData;
 			printf("Station disconnected\n");
 			printf("Disconnect reason : %d\n", lDisconnect->reason);
-			lResult = esp_wifi_connect();
-			ESP_ERROR_CHECK(lResult);
+			if (mConnectionFailed){
+				lResult = esp_wifi_stop();
+				ESP_ERROR_CHECK(lResult);
+				printf("Wifi stopped\n");
+			} else {
+				printf("Retry Connect\n");
+				lResult = esp_wifi_connect();
+				ESP_ERROR_CHECK(lResult);
+			}
 			mConnected = false;
 
 			/* Stop the web server */
@@ -123,12 +194,8 @@ void sInitialiseStation(){
 	wifi_init_config_t lConfig;
 	wifi_config_t lWifiConfig;
 	esp_err_t lResult;
-	wifi_sta_config_t lEffe;
-	printf("Test MAC"\n);
-	if (xSettingMacPresent()){
-		printf("Set MAC"\n);
-		esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
-	}
+	uint8 lMac[6];
+
 	lResult = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
@@ -136,6 +203,17 @@ void sInitialiseStation(){
 	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
 	lResult = esp_wifi_init(&lConfig);
 	ESP_ERROR_CHECK(lResult);
+
+	printf("Test MAC\n");
+	memcpy(lMac, xSettingMac(), sizeof(lMac));
+	printf("MAC of Setting: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
+	if (xSettingMacPresent()){
+		lResult = esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
+		printf("Set MAC. Result %d\n", lResult);
+	}
+	esp_wifi_get_mac(ESP_IF_WIFI_STA, lMac);
+	printf("MAC of station: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
+
 	lResult = esp_wifi_set_storage(WIFI_STORAGE_RAM);
 	ESP_ERROR_CHECK(lResult);
 	memset(&lWifiConfig, 0, sizeof(lWifiConfig));
@@ -146,6 +224,17 @@ void sInitialiseStation(){
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig);
 	ESP_ERROR_CHECK(lResult);
+
+	printf("Test MAC\n");
+	memcpy(lMac, xSettingMac(), sizeof(lMac));
+	printf("MAC of Setting: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
+	if (xSettingMacPresent()){
+		lResult = esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
+		printf("Set MAC. Result %d\n", lResult);
+	}
+	esp_wifi_get_mac(ESP_IF_WIFI_STA, lMac);
+	printf("MAC of station: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
+
 	lResult = esp_wifi_start();
 	ESP_ERROR_CHECK(lResult);
 }
@@ -165,6 +254,7 @@ void sInitialiseWifi(){
 
 void tcbHeartBeat(TimerHandle_t pTimer) {
 	static int lTest;
+	int8 lFailCount;
 
 	mStartCounter++;
 	if (mConnected) {
@@ -173,6 +263,15 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 			printf("Counting....%d\n", mStartCounter);
 		}
 	} else {
+		if (mStartCounter == STARTPAUSE + 30){
+			mConnectionFailed = true;
+			lFailCount = sConnectionFailed();
+			if (lFailCount < 0){
+				printf("Connection failed too often. Reset!\n");
+			} else {
+				printf("Connection failed. Counter: %d\n", lFailCount);
+			}
+		}
 		printf("Counting....%d\n", mStartCounter);
 	}
 
@@ -180,7 +279,7 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 		printf("SDK version:%s\n", esp_get_idf_version());
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
 	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
-	    xSettingInit();
+	    xAsyncInit();
 	    sInitialiseWifi();
 /*		ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
 		ets_uart_printf("Flash chip id: %x\r\n", spi_flash_get_id());
@@ -211,8 +310,10 @@ void app_main() {
 	}
 	ESP_ERROR_CHECK(lResult);
 	xSwitchInit();
+    xSettingInit();
 	mHartBeat = xTimerCreate("HartBeat", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, tcbHeartBeat);
 	mStartCounter = 0;
 	mConnected = false;
+	mConnectionFailed = false;
 	xTimerStart(mHartBeat, 100);
 }

@@ -13,6 +13,7 @@
 #include <esp_http_server.h>
 #include "setting.h"
 #include "switch.h"
+#include "main_async.h"
 
 void xMessSwitchStatus(char * pBuffer, const int pLength){
 	cJSON *lReply;
@@ -205,6 +206,7 @@ uint16 xMessSetSetting(char * pBuffer, const int pLength){
 	uint8 lInt;
 	uint8 lByte;
 	uint8 lIp[4];
+	struct QueueItem lQueueItem;
 
 	lRequest = cJSON_Parse(pBuffer);
 	if (lRequest == NULL){
@@ -306,7 +308,8 @@ uint16 xMessSetSetting(char * pBuffer, const int pLength){
 		    	}
 		    }
 
-		    xSettingWrite();
+		    lQueueItem.qAction = ActionWriteSetting;
+		    xAsyncProcess(lQueueItem);
 
     		xMessSwitchSetting(pBuffer, pLength);
     		lResult = 200;

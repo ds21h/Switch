@@ -57,6 +57,30 @@ esp_err_t hGetSetting(httpd_req_t *pReq) {
 httpd_uri_t hGetSettingCtrl = { .uri = "/switch/setting", .method = HTTP_GET, .handler =
 		hGetSetting, .user_ctx = NULL };
 
+esp_err_t hGetRestart(httpd_req_t *pReq) {
+	const int cBufferLength = 256;
+	size_t lLength;
+    char*  lBuffer;
+
+    lBuffer = (char *)malloc(cBufferLength);
+	memset(lBuffer, 0, cBufferLength);
+
+	lLength = httpd_req_get_url_query_len(pReq) + 1;
+	if (lLength > 1) {
+		httpd_resp_set_status(pReq, RESP400);
+		xMessCreateError(lBuffer, cBufferLength, RESP400);
+	} else {
+		xMessSwitchStatus(lBuffer, cBufferLength);
+	}
+	httpd_resp_set_type(pReq, TYPE_JSON);
+	httpd_resp_send(pReq, lBuffer, strlen(lBuffer));
+	free(lBuffer);
+	return ESP_OK;
+}
+
+httpd_uri_t hGetRestartCtrl = { .uri = "/switch/restart", .method = HTTP_GET, .handler =
+		hGetRestart, .user_ctx = NULL };
+
 esp_err_t hPutSwitch(httpd_req_t *pReq) {
 	const int cBufferLength = 256;
 	size_t lLength;
@@ -214,6 +238,7 @@ httpd_handle_t xStartServer(void) {
 		// Set URI handlers
 		httpd_register_uri_handler(lServer, &hGetSwitchCtrl);
 		httpd_register_uri_handler(lServer, &hGetSettingCtrl);
+		httpd_register_uri_handler(lServer, &hGetRestartCtrl);
 		httpd_register_uri_handler(lServer, &hPutSwitchCtrl);
 		httpd_register_uri_handler(lServer, &hPutSettingCtrl);
 		return lServer;

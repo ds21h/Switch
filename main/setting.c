@@ -9,6 +9,8 @@
 #include "esp_system.h"
 #include <string.h>
 #include "setting.h"
+#include "FreeRTOS/FreeRTOS.h"
+#include "FreeRTOS/timers.h"
 
 #define SETTINGVERSION		1
 
@@ -184,10 +186,16 @@ void xSettingWrite(){
 	esp_err_t lResult;
 
 	if (mSettingChanged){
+		/* As the nvs_set_blob can take some time insert some delays to prevent watchdog reset!  */
+		vTaskDelay(1);
 		lResult = nvs_open("switch", NVS_READWRITE, &lHandle);
 		if (lResult == ESP_OK){
+			vTaskDelay(1);
 			lResult = nvs_set_blob(lHandle, "setting", &mSetting, sizeof(mSetting));
 			printf("Write Setting. Result %d\n", lResult);
+			vTaskDelay(1);
+			lResult = nvs_commit(lHandle);
+			printf("Commit write. Result %d\n", lResult);
 			nvs_close(lHandle);
 			printf("Close. Result %d\n", lResult);
 		}
