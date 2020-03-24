@@ -11,11 +11,16 @@
 #include "FreeRTOS/queue.h"
 #include "portmacro.h"
 #include "setting.h"
+#include "esp_system.h"
+#include "esp_http_server.h"
+#include "server.h"
+#include "esp_wifi.h"
 
 QueueHandle_t mAsyncQueue = NULL;
 
 void hAsync(void *pParameters){
 	struct QueueItem lItem;
+	uint8 lDelay;
 
 	while (1){
 		xQueueReceive(mAsyncQueue, &lItem, portMAX_DELAY);
@@ -25,6 +30,17 @@ void hAsync(void *pParameters){
 			break;
 		case ActionRestart:
 			printf("Restart requested\n");
+			lDelay = 5;
+			while (lDelay > 0){
+				if(lDelay == 3){
+					xStopServer();
+//					esp_wifi_stop();
+				}
+				printf("Restart in %d seconds\n", lDelay);
+				vTaskDelay(1000/portTICK_PERIOD_MS);
+				lDelay--;
+			}
+			esp_restart();
 			break;
 		default:
 			printf("Message fromAsyncTask\n");

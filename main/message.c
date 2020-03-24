@@ -101,6 +101,26 @@ void xMessSwitchSetting(char * pBuffer, const int pLength){
 	cJSON_Delete(lReply);
 }
 
+void xMessRestart(char * pBuffer, const int pLength){
+	cJSON *lReply;
+	cJSON *lResult;
+	cJSON *lText;
+	struct QueueItem lQueueItem;
+
+	memset(pBuffer, 0, pLength);
+
+	lReply = cJSON_CreateObject();
+	lResult = cJSON_CreateString("OK");
+	cJSON_AddItemToObject(lReply, "result", lResult);
+	lText = cJSON_CreateString("Restart requested");
+	cJSON_AddItemToObject(lReply, "text", lText);
+	cJSON_PrintPreallocated(lReply, pBuffer, pLength, false);
+	cJSON_Delete(lReply);
+
+    lQueueItem.qAction = ActionRestart;
+    xAsyncProcess(lQueueItem);
+}
+
 uint16 xMessSetSwitch(char * pBuffer, const int pLength){
 	cJSON *lRequest = NULL;
 	cJSON *lStatus = NULL;

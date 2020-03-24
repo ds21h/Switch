@@ -9,6 +9,8 @@
 #include "esp_system.h"
 #include <esp_http_server.h>
 
+httpd_handle_t mServer = NULL;
+
 esp_err_t hGetSwitch(httpd_req_t *pReq) {
 	const int cBufferLength = 256;
 	size_t lLength;
@@ -58,7 +60,7 @@ httpd_uri_t hGetSettingCtrl = { .uri = "/switch/setting", .method = HTTP_GET, .h
 		hGetSetting, .user_ctx = NULL };
 
 esp_err_t hGetRestart(httpd_req_t *pReq) {
-	const int cBufferLength = 256;
+	const int cBufferLength = 128;
 	size_t lLength;
     char*  lBuffer;
 
@@ -70,7 +72,7 @@ esp_err_t hGetRestart(httpd_req_t *pReq) {
 		httpd_resp_set_status(pReq, RESP400);
 		xMessCreateError(lBuffer, cBufferLength, RESP400);
 	} else {
-		xMessSwitchStatus(lBuffer, cBufferLength);
+		xMessRestart(lBuffer, cBufferLength);
 	}
 	httpd_resp_set_type(pReq, TYPE_JSON);
 	httpd_resp_send(pReq, lBuffer, strlen(lBuffer));
@@ -227,29 +229,32 @@ esp_err_t hPutSetting(httpd_req_t *pReq) {
 httpd_uri_t hPutSettingCtrl = { .uri = "/switch/setting", .method = HTTP_PUT, .handler =
 		hPutSetting, .user_ctx = NULL };
 
-httpd_handle_t xStartServer(void) {
-	httpd_handle_t lServer = NULL;
+void xStartServer() {
 	httpd_config_t lConfig;
 
-	lConfig = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
-	// Start the httpd server
-	printf("Starting server on port: '%d'\n", lConfig.server_port);
-	if (httpd_start(&lServer, &lConfig) == ESP_OK) {
-		// Set URI handlers
-		httpd_register_uri_handler(lServer, &hGetSwitchCtrl);
-		httpd_register_uri_handler(lServer, &hGetSettingCtrl);
-		httpd_register_uri_handler(lServer, &hGetRestartCtrl);
-		httpd_register_uri_handler(lServer, &hPutSwitchCtrl);
-		httpd_register_uri_handler(lServer, &hPutSettingCtrl);
-		return lServer;
+	if (mServer == NULL){
+		lConfig = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
+		printf("Starting server on port: '%d'\n", lConfig.server_port);
+		if (httpd_start(&mServer, &lConfig) == ESP_OK) {
+			// Set URI handlers
+			httpd_register_uri_handler(mServer, &hGetSwitchCtrl);
+			httpd_register_uri_handler(mServer, &hGetSettingCtrl);
+			httpd_register_uri_handler(mServer, &hGetRestartCtrl);
+			httpd_register_uri_handler(mServer, &hPutSwitchCtrl);
+			httpd_register_uri_handler(mServer, &hPutSettingCtrl);
+		} else {
+			printf("Error starting server!\n");
+			mServer = NULL;
+		}
+	} else {
+		printf("Server already started!\n");
 	}
-
-	printf("Error starting server!\n");
-	return NULL;
 }
 
-void xStopServer(httpd_handle_t pServer) {
-	// Stop the httpd server
-	httpd_stop(pServer);
+void xStopServer() {
+	if (mServer != NULL){
+		httpd_stop(mServer);
+		mServer = NULL;
+	}
 }
 

@@ -8,7 +8,7 @@
 #ifndef MAIN_SERVER_H_
 #define MAIN_SERVER_H_
 
-httpd_handle_t xStartServer(void);
-void xStopServer(httpd_handle_t pServer);
+void xStartServer();
+void xStopServer();
 
 #endif /* MAIN_SERVER_H_ */
