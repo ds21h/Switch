@@ -11,6 +11,8 @@
 #include "setting.h"
 #include "main_async.h"
 #include "main_wifi.h"
+#include "main_time.h"
+#include "logger.h"
 
 TimerHandle_t mHartBeat;
 int mStartCounter;
@@ -18,12 +20,16 @@ int mStartCounter;
 void tcbHeartBeat(TimerHandle_t pTimer) {
 	static int lTest;
 	int8 lFailCount;
+	int32 lTime;
+	char lTimeS[20];
 
 	mStartCounter++;
 	if (xWifiConnected()) {
 		lTest = (mStartCounter / 10) * 10;
 		if (mStartCounter == lTest) {
-			printf("Counting....%d\n", mStartCounter);
+			lTime = xTimeNow();
+			xTimeString(lTime, lTimeS, sizeof(lTimeS));
+			printf("Counting....%d, Time %s\n", mStartCounter, lTimeS);
 		}
 	} else {
 		if (mStartCounter == STARTPAUSE + 30){
@@ -43,6 +49,8 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
 	    xAsyncInit();
 	    xWifiStart();
+	    xTimeInit();
+	    xLogInit();
 /*		ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
 		ets_uart_printf("Flash chip id: %x\r\n", spi_flash_get_id());
 		switch (system_upgrade_userbin_check()){

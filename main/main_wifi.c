@@ -15,11 +15,16 @@
 #include "server.h"
 #include "setting.h"
 
-bool mConnected;
-bool mConnectionFailed;
+enum{
+	ConnectionClosed,
+	ConnectionMaking,
+	ConnectionConnected,
+	ConnectionFailed,
+	ConnectionClosing
+} mConnectionStatus;
 
 bool xWifiConnected(){
-	return mConnected;
+	return (mConnectionStatus == ConnectionConnected);
 }
 
 void sConnectionSuccess(){
@@ -53,7 +58,7 @@ int8 xWifiFail(){
 	int8 lFailCount;
 	bool lReset;
 
-	mConnectionFailed = true;
+	mConnectionStatus = ConnectionFailed;
 	printf("Set failed count\n");
 	lReset = false;
 	lResult = nvs_open("fail", NVS_READWRITE, &lHandle);
@@ -85,6 +90,13 @@ int8 xWifiFail(){
 	return lFailCount;
 }
 
+void xWifiClose(){
+	mConnectionStatus = ConnectionClosing;
+	esp_wifi_disconnect();
+	esp_wifi_stop();
+	esp_wifi_deinit();
+}
+
 static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEventID, void* pEventData){
 	esp_err_t lResult;
 	wifi_event_sta_disconnected_t * lDisconnect;
@@ -94,7 +106,7 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 		if (pEventID == IP_EVENT_STA_GOT_IP){
 			lGotIP = (ip_event_got_ip_t *)pEventData;
 			printf("Station got IP '%s'\n", ip4addr_ntoa(&lGotIP->ip_info.ip));
-			mConnected = true;
+			mConnectionStatus = ConnectionConnected;
 			sConnectionSuccess();
 			xStartServer();
 		}
@@ -114,17 +126,22 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 			lDisconnect = (wifi_event_sta_disconnected_t *)pEventData;
 			printf("Station disconnected\n");
 			printf("Disconnect reason : %d\n", lDisconnect->reason);
-			if (mConnectionFailed){
+			switch (mConnectionStatus){
+			case ConnectionClosing:
+				break;
+			case ConnectionFailed:
 				lResult = esp_wifi_stop();
 				ESP_ERROR_CHECK(lResult);
 				printf("Wifi stopped\n");
-			} else {
+				break;
+			default:
+				mConnectionStatus = ConnectionMaking;
+				xStopServer();
 				printf("Retry Connect\n");
 				lResult = esp_wifi_connect();
 				ESP_ERROR_CHECK(lResult);
+				break;
 			}
-			mConnected = false;
-			xStopServer();
 			break;
 		}
 	}
@@ -175,7 +192,7 @@ void sInitialiseAP(){
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_wifi_start();
 	ESP_ERROR_CHECK(lResult);
-	mConnected = true;
+	mConnectionStatus = ConnectionConnected;
 	xStartServer();
 }
 
@@ -192,16 +209,6 @@ void sInitialiseStation(){
 	lConfig = (wifi_init_config_t)WIFI_INIT_CONFIG_DEFAULT();
 	lResult = esp_wifi_init(&lConfig);
 	ESP_ERROR_CHECK(lResult);
-
-	printf("Test MAC\n");
-	memcpy(lMac, xSettingMac(), sizeof(lMac));
-	printf("MAC of Setting: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
-	if (xSettingMacPresent()){
-		lResult = esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
-		printf("Set MAC. Result %d\n", lResult);
-	}
-	esp_wifi_get_mac(ESP_IF_WIFI_STA, lMac);
-	printf("MAC of station: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
 
 	lResult = esp_wifi_set_storage(WIFI_STORAGE_RAM);
 	ESP_ERROR_CHECK(lResult);
@@ -242,7 +249,6 @@ void xWifiStart(){
 }
 
 void xWifiInit(){
-	mConnected = false;
-	mConnectionFailed = false;
+	mConnectionStatus = ConnectionClosed;
 }
 

@@ -14,7 +14,7 @@
 #include "esp_system.h"
 #include "esp_http_server.h"
 #include "server.h"
-#include "esp_wifi.h"
+#include "main_wifi.h"
 
 QueueHandle_t mAsyncQueue = NULL;
 
@@ -34,7 +34,7 @@ void hAsync(void *pParameters){
 			while (lDelay > 0){
 				if(lDelay == 3){
 					xStopServer();
-//					esp_wifi_stop();
+					xWifiClose();
 				}
 				printf("Restart in %d seconds\n", lDelay);
 				vTaskDelay(1000/portTICK_PERIOD_MS);

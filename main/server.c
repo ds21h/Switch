@@ -7,27 +7,56 @@
 #include "switch_config.h"
 #include "message.h"
 #include "esp_system.h"
-#include <esp_http_server.h>
+#include "esp_http_server.h"
+#include "esp_netif.h"
+#include "lwip/sockets.h"
+#include "logger.h"
 
 httpd_handle_t mServer = NULL;
+
+uint32 sGetRemoteIP(httpd_req_t *pReq){
+	struct sockaddr_in lSocket;
+	int lSockFd;
+	socklen_t lSockLen;
+	esp_err_t lResult;
+	uint32 lIP;
+
+    lSockFd = httpd_req_to_sockfd(pReq);
+    lSockLen = sizeof(lSocket);
+    lResult = lwip_getpeername(lSockFd, (struct sockaddr *)&lSocket, &lSockLen);
+    if (lResult == -1) {
+        lIP = 0;
+    } else {
+        lIP = lSocket.sin_addr.s_addr;
+    }
+    return lIP;
+}
 
 esp_err_t hGetSwitch(httpd_req_t *pReq) {
 	const int cBufferLength = 256;
 	size_t lLength;
     char*  lBuffer;
+    enum LogItem lLogAction;
+    uint32 lIP;
 
     lBuffer = (char *)malloc(cBufferLength);
 	memset(lBuffer, 0, cBufferLength);
 
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 1) {
+		lLogAction = LogGetError;
 		httpd_resp_set_status(pReq, RESP400);
 		xMessCreateError(lBuffer, cBufferLength, RESP400);
 	} else {
+		lLogAction = LogGetSwitch;
 		xMessSwitchStatus(lBuffer, cBufferLength);
 	}
+	lIP = sGetRemoteIP(pReq);
+	printf("IP '%s'\n", ip4addr_ntoa((ip4_addr_t *)&lIP));
+	xLogEntry(lLogAction, lIP);
 	httpd_resp_set_type(pReq, TYPE_JSON);
 	httpd_resp_send(pReq, lBuffer, strlen(lBuffer));
+
 	free(lBuffer);
 	return ESP_OK;
 }
