@@ -9,6 +9,7 @@
 #define MAIN_MAIN_TIME_H_
 
 void xTimeInit();
+void xTimeStop();
 int32 xTimeNow();
 void xTimeString(int32 pTime, char * pResult, uint8 pLength);
 

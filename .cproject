@@ -72,6 +72,8 @@
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\esp_http_server\include&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\tcpip_adapter\include&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;D:\Programmas\Espressif\ESP8266_RTOS_SDK\components\lwip\include&quot;"/>
                                     								
                                 </option>
                                 								

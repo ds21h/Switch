@@ -207,7 +207,7 @@ void xSettingReset(){
 	memset(&mSetting, 0, sizeof(mSetting));
 	mSetting.sVersion = SETTINGVERSION;
 	mSetting.sSwitchModel = 1;
-	mSetting.sLogLevel = 1;
+	mSetting.sLogLevel = 0;
 	mSetting.sButton = true;
 	mSetting.sAutoOff = 43200;
 	mSettingChanged = true;

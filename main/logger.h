@@ -11,11 +11,15 @@
 #include "switch_config.h"
 
 enum LogItem {
-LogInit = 0,
+LogNone = 0,
+LogInit,
 LogSet,
 LogGetSwitch,
 LogGetSetting,
 LogGetSwitchMult,
+LogGetLog,
+LogGetLogMult,
+LogGetRestart,
 LogGetError,
 LogPutSwitchOn,
 LogPutSwitchOff,
@@ -31,6 +35,11 @@ LogUpgrade,
 LogRestart
 };
 
+int xLogNumber();
+int xLogCurrent();
+int xLogAction(int pEntry);
+long xLogTime(int pEntry);
+uint32 xLogIP(int pEntry);
 void xLogEntry(enum LogItem pAction, uint32 pIp);
 void xLogInit();
 

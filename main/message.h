@@ -8,11 +8,35 @@
 #ifndef MAIN_MESSAGE_H_
 #define MAIN_MESSAGE_H_
 
-void xMessSwitchStatus(char * pBuffer, const int pLength);
-void xMessSwitchSetting(char * pBuffer, const int pLength);
-void xMessRestart(char * pBuffer, const int pLength);
-uint16 xMessSetSwitch(char * pBuffer, const int pLength);
-uint16 xMessSetSetting(char * pBuffer, const int pLength);
+struct MessSwitch{
+	struct {
+		uint8 sProcessInfo;
+	} sResult;
+	char sBuffer[256];
+};
+
+struct MessSetting{
+	struct {
+		uint8 sProcessInfo;
+	} sResult;
+	char sBuffer[380];
+};
+
+struct MessRestart{
+	char sBuffer[50];
+};
+
+struct MessLog{
+	char sBuffer[1024];
+};
+
+
+void xMessSwitchStatus(struct MessSwitch * pSwitch);
+void xMessSwitchSetting(struct MessSetting * pSetting);
+void xMessSwitchLog(int32 pStart, struct MessLog * pLog);
+void xMessRestart(struct MessRestart * pRestart);
+void xMessSetSwitch(struct MessSwitch * pSwitch);
+void xMessSetSetting(struct MessSetting * pSetting);
 void xMessCreateError(char * pBuffer, const int pLength, const char * pText);
 
 #endif /* MAIN_MESSAGE_H_ */

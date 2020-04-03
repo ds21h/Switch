@@ -5,9 +5,12 @@
  *      Author: Jan
  */
 #include "switch_config.h"
+#include "FreeRTOS/FreeRTOS.h"
+#include "FreeRTOS/timers.h"
 #include "string.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
+#include "esp_err.h"
 #include "esp_event_loop.h"
 #include "tcpip_adapter.h"
 #include "nvs_flash.h"
@@ -90,13 +93,6 @@ int8 xWifiFail(){
 	return lFailCount;
 }
 
-void xWifiClose(){
-	mConnectionStatus = ConnectionClosing;
-	esp_wifi_disconnect();
-	esp_wifi_stop();
-	esp_wifi_deinit();
-}
-
 static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEventID, void* pEventData){
 	esp_err_t lResult;
 	wifi_event_sta_disconnected_t * lDisconnect;
@@ -128,6 +124,7 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 			printf("Disconnect reason : %d\n", lDisconnect->reason);
 			switch (mConnectionStatus){
 			case ConnectionClosing:
+				printf("Disconnect, no retry!\n");
 				break;
 			case ConnectionFailed:
 				lResult = esp_wifi_stop();

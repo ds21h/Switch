@@ -7,6 +7,7 @@
 #include "switch_config.h"
 #include "stdlib.h"
 #include "string.h"
+#include "esp_system.h"
 #include "main_time.h"
 #include "setting.h"
 #include "logger.h"
@@ -25,38 +26,77 @@ struct log{
 	uint8 sNumber;
 	uint8 sCurrent;
 	struct log_entry sEntry[LOG_NUMBER_ENTRIES];
-};
+} mLog;
 
 uint8 mLogLevel = 0;
 
-struct log *mLog = NULL;
+int xLogNumber(){
+	return mLog.sNumber;
+}
+
+int xLogCurrent(){
+	return mLog.sCurrent;
+}
+
+int xLogAction(int pEntry){
+	if (pEntry >= 0 && pEntry < LOG_NUMBER_ENTRIES){
+		return mLog.sEntry[pEntry].sAction;
+	} else {
+		return 0;
+	}
+}
+
+long xLogTime(int pEntry){
+	if (pEntry >= 0 && pEntry < LOG_NUMBER_ENTRIES){
+		return mLog.sEntry[pEntry].sTime;
+	} else {
+		return 0;
+	}
+}
+
+uint32 xLogIP(int pEntry){
+	if (pEntry >= 0 && pEntry < LOG_NUMBER_ENTRIES){
+		return mLog.sEntry[pEntry].sIp;
+	} else {
+		return 0;
+	}
+}
 
 void xLogEntry(enum LogItem pAction, uint32 pIp){
 	int8 lPrev;
 	bool lMultiple;
 
 	lMultiple = false;
+	lPrev = mLog.sCurrent - 1;
+	if (lPrev < 0){
+		lPrev = mLog.sNumber - 1;
+	}
 	if (mLogLevel > 0){
 		if (pAction == LogGetSwitch){
-			lPrev = mLog->sCurrent - 1;
-			if (lPrev < 0){
-				lPrev = mLog->sNumber;
-			}
-			if (mLog->sEntry[lPrev].sAction == LogGetSwitch || mLog->sEntry[lPrev].sAction == LogGetSwitchMult){
-				if (mLog->sEntry[lPrev].sIp == pIp){
+			if (mLog.sEntry[lPrev].sAction == LogGetSwitch || mLog.sEntry[lPrev].sAction == LogGetSwitchMult){
+				if (mLog.sEntry[lPrev].sIp == pIp){
 					lMultiple = true;
-					mLog->sEntry[mLog->sCurrent].sAction = LogGetSwitchMult;
-					mLog->sEntry[mLog->sCurrent].sTime = xTimeNow();
+					mLog.sEntry[lPrev].sAction = LogGetSwitchMult;
+					mLog.sEntry[lPrev].sTime = xTimeNow();
+				}
+			}
+		}
+		if (pAction == LogGetLog){
+			if (mLog.sEntry[lPrev].sAction == LogGetLog || mLog.sEntry[lPrev].sAction == LogGetLogMult){
+				if (mLog.sEntry[lPrev].sIp == pIp){
+					lMultiple = true;
+					mLog.sEntry[lPrev].sAction = LogGetLogMult;
+					mLog.sEntry[lPrev].sTime = xTimeNow();
 				}
 			}
 		}
 		if (!lMultiple){
-			mLog->sEntry[mLog->sCurrent].sAction = (uint8)pAction;
-			mLog->sEntry[mLog->sCurrent].sTime = xTimeNow();
-			mLog->sEntry[mLog->sCurrent].sIp = pIp;
-			mLog->sCurrent++;
-			if (mLog->sCurrent >= mLog->sNumber){
-				mLog->sCurrent = 0;
+			mLog.sEntry[mLog.sCurrent].sAction = (uint8)pAction;
+			mLog.sEntry[mLog.sCurrent].sTime = xTimeNow();
+			mLog.sEntry[mLog.sCurrent].sIp = pIp;
+			mLog.sCurrent++;
+			if (mLog.sCurrent >= mLog.sNumber){
+				mLog.sCurrent = 0;
 			}
 		}
 	}
@@ -64,9 +104,9 @@ void xLogEntry(enum LogItem pAction, uint32 pIp){
 
 void sLogInit(){
     memset(&mLog, 0, sizeof(mLog));
-    mLog->sVersion = LOG_VERSION;
-    mLog->sNumber = LOG_NUMBER_ENTRIES;
-    mLog->sCurrent = 0;
+    mLog.sVersion = LOG_VERSION;
+    mLog.sNumber = LOG_NUMBER_ENTRIES;
+    mLog.sCurrent = 0;
 }
 
 void xLogInit(){
@@ -81,13 +121,8 @@ void xLogInit(){
 	}
 
 	if (mLogLevel > 0){
-		mLog = (struct log *)malloc(sizeof (struct log));
-		if (mLog == NULL){
-			mLogLevel = 0;
-		} else {
-			sLogInit();
-			lAction = LogInit;
-    		xLogEntry(lAction, mLogLevel);
-		}
+		sLogInit();
+		lAction = LogInit;
+    	xLogEntry(lAction, mLogLevel);
 	}
 }

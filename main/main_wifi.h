@@ -14,6 +14,5 @@ bool xWifiConnected();
 void xWifiInit();
 void xWifiStart();
 int8 xWifiFail();
-void xWifiClose();
 
 #endif /* MAIN_MAIN_WIFI_H_ */

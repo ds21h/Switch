@@ -35,6 +35,10 @@ int32 xTimeNow(){
 	return (int32)lTime;
 }
 
+void xTimeStop(){
+	sntp_stop();
+}
+
 void xTimeInit(){
 	sntp_setservername(0, "0.nl.pool.ntp.org");
 	sntp_setservername(1, "1.nl.pool.ntp.org");

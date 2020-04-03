@@ -10,12 +10,19 @@
 #include "message.h"
 #include "cJSON.h"
 #include "esp_system.h"
+#include "esp_wifi.h"
 #include <esp_http_server.h>
 #include "setting.h"
 #include "switch.h"
+#include "logger.h"
 #include "main_async.h"
+#include "main_time.h"
 
-void xMessSwitchStatus(char * pBuffer, const int pLength){
+#define ERROR_PARSE		"JSON error"
+#define ERROR_NO_ACTION	"No action specified"
+#define ERROR_VALUE		"Incorrect value specified"
+
+void xMessSwitchStatus(struct MessSwitch * pSwitch){
 	cJSON *lReply;
 	cJSON *lResult;
 	cJSON *lVersion;
@@ -26,7 +33,7 @@ void xMessSwitchStatus(char * pBuffer, const int pLength){
 	cJSON *lModel;
 	cJSON *lStatus;
 
-	memset(pBuffer, 0, pLength);
+	memset(pSwitch, 0, sizeof(struct MessSwitch));
 
 	lReply = cJSON_CreateObject();
 	lResult = cJSON_CreateString("OK");
@@ -45,11 +52,11 @@ void xMessSwitchStatus(char * pBuffer, const int pLength){
 	cJSON_AddItemToObject(lReply, "model", lModel);
 	lStatus = cJSON_CreateString((xSwitchStatus()) ? "on" : "off");
 	cJSON_AddItemToObject(lReply, "status", lStatus);
-	cJSON_PrintPreallocated(lReply, pBuffer, pLength, false);
+	cJSON_PrintPreallocated(lReply, pSwitch->sBuffer, sizeof(pSwitch->sBuffer), false);
 	cJSON_Delete(lReply);
 }
 
-void xMessSwitchSetting(char * pBuffer, const int pLength){
+void xMessSwitchSetting(struct MessSetting * pSetting){
 	cJSON *lReply;
 	cJSON *lResult;
 	cJSON *lSsId;
@@ -66,7 +73,7 @@ void xMessSwitchSetting(char * pBuffer, const int pLength){
 
 	char lWorkStr[17];
 
-	memset(pBuffer, 0, pLength);
+	memset(pSetting, 0, sizeof(struct MessSetting));
 
 	lReply = cJSON_CreateObject();
 	lResult = cJSON_CreateString("OK");
@@ -97,63 +104,129 @@ void xMessSwitchSetting(char * pBuffer, const int pLength){
 	cJSON_AddItemToObject(lReply, "serverip", lServerIP);
 	lServerPort = cJSON_CreateNumber(xSettingServerPort());
 	cJSON_AddItemToObject(lReply, "serverport", lServerPort);
-	cJSON_PrintPreallocated(lReply, pBuffer, pLength, false);
+	cJSON_PrintPreallocated(lReply, pSetting->sBuffer, sizeof(pSetting->sBuffer), false);
 	cJSON_Delete(lReply);
 }
 
-void xMessRestart(char * pBuffer, const int pLength){
+void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
+	cJSON *lReply;
+	cJSON *lResult;
+	cJSON *lNumber;
+	cJSON *lCurrent;
+	cJSON *lTime;
+	cJSON *lLog;
+	cJSON *lLogEntry;
+	cJSON *lEntrySeq;
+	cJSON *lEntryAction;
+	cJSON *lEntryTime;
+	cJSON *lEntryIP;
+	int lTimeInt;
+	char lTimeS[20];
+	uint32 lIpInt;
+	int lSeq;
+	int lCount;
+
+	memset(pLog, 0, sizeof(struct MessLog));
+
+	lReply = cJSON_CreateObject();
+	lResult = cJSON_CreateString("OK");
+	cJSON_AddItemToObject(lReply, "result", lResult);
+	lNumber = cJSON_CreateNumber(xLogNumber());
+	cJSON_AddItemToObject(lReply, "number", lNumber);
+	lCurrent = cJSON_CreateNumber(xLogCurrent());
+	cJSON_AddItemToObject(lReply, "current", lCurrent);
+	lTimeInt = xTimeNow();
+	xTimeString(lTimeInt, lTimeS, sizeof(lTimeS));
+	lTime = cJSON_CreateString(lTimeS);
+	cJSON_AddItemToObject(lReply, "time", lTime);
+	lLog = cJSON_CreateArray();
+	cJSON_AddItemToObject(lReply, "log", lLog);
+
+	if (pStart < 0){
+		lSeq = xLogCurrent() - 1;
+	} else {
+		if (pStart < xLogNumber()){
+			lSeq = pStart;
+		} else {
+			lSeq = xLogNumber() - 1;
+		}
+	}
+	for (lCount = 0; lCount < 10; lCount++){
+		lLogEntry = cJSON_CreateObject();
+		cJSON_AddItemToArray(lLog, lLogEntry);
+		lEntrySeq = cJSON_CreateNumber(lSeq);
+		cJSON_AddItemToObject(lLogEntry, "entry", lEntrySeq);
+		lEntryAction = cJSON_CreateNumber(xLogAction(lSeq));
+		cJSON_AddItemToObject(lLogEntry, "action", lEntryAction);
+		lTimeInt = xLogTime(lSeq);
+		xTimeString(lTimeInt, lTimeS, sizeof(lTimeS));
+		lEntryTime = cJSON_CreateString(lTimeS);
+		cJSON_AddItemToObject(lLogEntry, "time", lEntryTime);
+		lIpInt = xLogIP(lSeq);
+		lEntryIP = cJSON_CreateString(ip4addr_ntoa((struct ip4_addr *)&lIpInt));
+		cJSON_AddItemToObject(lLogEntry, "ip", lEntryIP);
+
+		lSeq--;
+		if (lSeq < 0){
+			lSeq = xLogNumber() - 1;
+		}
+	}
+	cJSON_PrintPreallocated(lReply, pLog->sBuffer, sizeof(pLog->sBuffer), false);
+	cJSON_Delete(lReply);
+}
+
+void xMessRestart(struct MessRestart pRestart){
 	cJSON *lReply;
 	cJSON *lResult;
 	cJSON *lText;
 	struct QueueItem lQueueItem;
 
-	memset(pBuffer, 0, pLength);
+	memset(pRestart, 0, sizeof(struct MessRestart));
 
 	lReply = cJSON_CreateObject();
 	lResult = cJSON_CreateString("OK");
 	cJSON_AddItemToObject(lReply, "result", lResult);
 	lText = cJSON_CreateString("Restart requested");
 	cJSON_AddItemToObject(lReply, "text", lText);
-	cJSON_PrintPreallocated(lReply, pBuffer, pLength, false);
+	cJSON_PrintPreallocated(lReply, pRestart.sBuffer, sizeof(pRestart.sBuffer), false);
 	cJSON_Delete(lReply);
 
     lQueueItem.qAction = ActionRestart;
     xAsyncProcess(lQueueItem);
 }
 
-uint16 xMessSetSwitch(char * pBuffer, const int pLength){
+void xMessSetSwitch(struct MessSwitch * pSwitch){
 	cJSON *lRequest = NULL;
 	cJSON *lStatus = NULL;
-	uint16 lResult;
 
-	lRequest = cJSON_Parse(pBuffer);
+	pSwitch->sResult.sProcessResult = true;
+	lRequest = cJSON_Parse(pSwitch->sBuffer);
 	if (lRequest == NULL){
-		xMessCreateError(pBuffer, pLength, RESP400);
-		lResult = 400;
+		pSwitch->sResult.sProcessInfo = 9;
+		xMessCreateError(pSwitch->sBuffer, sizeof(pSwitch->sBuffer), ERROR_PARSE);
 	} else {
 	    lStatus = cJSON_GetObjectItem(lRequest, "status");
 	    if (cJSON_IsString(lStatus) && (lStatus->valuestring != NULL)){
 	    	if (strcmp(lStatus->valuestring, "on") == 0){
 	    		xSwitchOn();
-	    		xMessSwitchStatus(pBuffer, pLength);
-	    		lResult = 200;
+	    		xMessSwitchStatus(pSwitch);
+				pSwitch->sResult.sProcessInfo = 1;
 	    	} else {
 		    	if (strcmp(lStatus->valuestring, "off") == 0){
 		    		xSwitchOff();
-		    		xMessSwitchStatus(pBuffer, pLength);
-		    		lResult = 200;
+		    		xMessSwitchStatus(pSwitch);
+					pSwitch->sResult.sProcessInfo = 0;
 		    	} else {
-		    		xMessCreateError(pBuffer, pLength, RESP400);
-		    		lResult = 400;
+		    		xMessCreateError(pSwitch->sBuffer, sizeof(pSwitch->sBuffer), ERROR_VALUE);
+					pSwitch->sResult.sProcessInfo = 9;
 		    	}
 	    	}
 	    } else {
-    		xMessCreateError(pBuffer, pLength, RESP400);
-    		lResult = 400;
+			pSwitch->sResult.sProcessInfo = 9;
+    		xMessCreateError(pSwitch->sBuffer, sizeof(pSwitch->sBuffer), ERROR_NO_ACTION);
 	    }
 	}
 	cJSON_Delete(lRequest);
-	return lResult;
 }
 
 static uint8 sHexToInt(char pHex) {
@@ -215,10 +288,9 @@ bool sParseIp(const char *pIpString, uint8 pIp[4]) {
 	return lResult;
 }
 
-uint16 xMessSetSetting(char * pBuffer, const int pLength){
+void xMessSetSetting(struct MessSetting * pSetting){
 	cJSON *lRequest = NULL;
 	cJSON *lItem = NULL;
-	uint16 lResult;
 	uint8 lMac[6];
 	char *lMacBuffer;
 	bool lMacOk;
@@ -228,10 +300,10 @@ uint16 xMessSetSetting(char * pBuffer, const int pLength){
 	uint8 lIp[4];
 	struct QueueItem lQueueItem;
 
-	lRequest = cJSON_Parse(pBuffer);
+	lRequest = cJSON_Parse(pSetting->sBuffer);
 	if (lRequest == NULL){
-		xMessCreateError(pBuffer, pLength, RESP400);
-		lResult = 400;
+		pSetting->sResult.sProcessInfo = 9;
+		xMessCreateError(pSetting->sBuffer, sizeof(pSetting->sBuffer), ERROR_PARSE);
 	} else {
 	    lItem = cJSON_GetObjectItem(lRequest, "reset");
 	    if (cJSON_IsString(lItem) && (lItem->valuestring != NULL)){
@@ -239,8 +311,8 @@ uint16 xMessSetSetting(char * pBuffer, const int pLength){
 	    		xSettingReset();
 	    		xSettingWrite();
 	    	}
-    		xMessSwitchSetting(pBuffer, pLength);
-    		lResult = 200;
+    		xMessSwitchSetting(pSetting);
+    		pSetting->sResult.sProcessInfo = 0;
 	    } else {
 		    lItem = cJSON_GetObjectItem(lRequest, "ssid");
 		    if (cJSON_IsString(lItem) && (lItem->valuestring != NULL)){
@@ -331,12 +403,11 @@ uint16 xMessSetSetting(char * pBuffer, const int pLength){
 		    lQueueItem.qAction = ActionWriteSetting;
 		    xAsyncProcess(lQueueItem);
 
-    		xMessSwitchSetting(pBuffer, pLength);
-    		lResult = 200;
+    		xMessSwitchSetting(pSetting);
+    		pSetting->sResult.sProcessInfo = 0;
 	    }
 	}
 	cJSON_Delete(lRequest);
-	return lResult;
 }
 
 void xMessCreateError(char * pBuffer, const int pLength, const char * pText){
