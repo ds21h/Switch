@@ -88,7 +88,7 @@ esp_err_t hGetSwitch(httpd_req_t *pReq) {
 
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 1) {
-		lLogAction = LogGetError;
+		lLogAction = LogGetSwitchError;
 		xMessCreateError(lSwitch.sBuffer, sizeof(lSwitch.sBuffer), ERROR_URL);
 	} else {
 		lLogAction = LogGetSwitch;
@@ -112,7 +112,7 @@ esp_err_t hGetSetting(httpd_req_t *pReq) {
 
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 1) {
-		lLogAction = LogGetError;
+		lLogAction = LogGetSettingError;
 		xMessCreateError(lSetting.sBuffer, sizeof(lSetting.sBuffer), ERROR_URL);
 	} else {
 		lLogAction = LogGetSetting;
@@ -122,7 +122,6 @@ esp_err_t hGetSetting(httpd_req_t *pReq) {
 	xLogEntry(lLogAction, lIP);
 	httpd_resp_set_type(pReq, TYPE_JSON);
 	httpd_resp_send(pReq, lSetting.sBuffer, strlen(lSetting.sBuffer));
-	free(lSetting);
 	return ESP_OK;
 }
 
@@ -160,7 +159,7 @@ esp_err_t hGetLog(httpd_req_t *pReq) {
 
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 10) {
-		lLogAction = LogGetError;
+		lLogAction = LogGetLogError;
 		xMessCreateError(lLog.sBuffer, sizeof(lLog.sBuffer), ERROR_URL);
 	} else {
 		lStart = -1;
@@ -193,7 +192,7 @@ esp_err_t hGetRestart(httpd_req_t *pReq) {
 
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 1) {
-		lLogAction = LogGetError;
+		lLogAction = LogGetRestartError;
 		xMessCreateError(lRestart.sBuffer, sizeof(lRestart.sBuffer), ERROR_URL);
 	} else {
 		lLogAction = LogGetRestart;
@@ -219,19 +218,19 @@ esp_err_t hPutSwitch(httpd_req_t *pReq) {
 	lResult = ESP_OK;
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 1) {
-		lLogAction = LogPutError;
+		lLogAction = LogPutSwitchError;
 		xMessCreateError(lSwitch.sBuffer, sizeof(lSwitch.sBuffer), ERROR_URL);
 	} else {
 		if (pReq->content_len < sizeof(lSwitch.sBuffer)){
 			lBytesRead = httpd_req_recv(pReq, lSwitch.sBuffer, sizeof(lSwitch.sBuffer));
 			if (lBytesRead < 0){
 		        if (lBytesRead == HTTPD_SOCK_ERR_TIMEOUT) {
-		    		lLogAction = LogPutError;
+		    		lLogAction = LogPutSwitchError;
 		    		httpd_resp_set_status(pReq, RESP408);
 		    		xMessCreateError(lSwitch.sBuffer, sizeof(lSwitch.sBuffer), RESP408);
 		    		lResult = ESP_FAIL;
 		        } else {
-		    		lLogAction = LogPutError;
+		    		lLogAction = LogPutSwitchError;
 		    		httpd_resp_set_status(pReq, RESP500);
 		    		xMessCreateError(lSwitch.sBuffer, sizeof(lSwitch.sBuffer), RESP500);
 		    		lResult = ESP_FAIL;
@@ -275,19 +274,19 @@ esp_err_t hPutSetting(httpd_req_t *pReq) {
 	lResult = ESP_OK;
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
 	if (lLength > 1) {
-		lLogAction = LogPutError;
+		lLogAction = LogPutSettingError;
 		xMessCreateError(lSetting.sBuffer, sizeof(lSetting.sBuffer), ERROR_URL);
 	} else {
 		if (pReq->content_len < sizeof(lSetting.sBuffer)){
 			lBytesRead = httpd_req_recv(pReq, lSetting.sBuffer, sizeof(lSetting.sBuffer));
 			if (lBytesRead < 0){
 		        if (lBytesRead == HTTPD_SOCK_ERR_TIMEOUT) {
-		    		lLogAction = LogPutError;
+		    		lLogAction = LogPutSettingError;
 		    		httpd_resp_set_status(pReq, RESP408);
 		    		xMessCreateError(lSetting.sBuffer, sizeof(lSetting.sBuffer), RESP408);
 		    		lResult = ESP_FAIL;
 		        } else {
-		    		lLogAction = LogPutError;
+		    		lLogAction = LogPutSettingError;
 		    		httpd_resp_set_status(pReq, RESP500);
 		    		xMessCreateError(lSetting.sBuffer, sizeof(lSetting.sBuffer), RESP500);
 		    		lResult = ESP_FAIL;
@@ -297,19 +296,18 @@ esp_err_t hPutSetting(httpd_req_t *pReq) {
 				if (lSetting.sResult.sProcessInfo == 0){
 					lLogAction = LogPutSetting;
 				} else {
-					lLogAction = LogPutError;
+					lLogAction = LogPutSettingError;
 				}
 			}
 		} else {
-			lLogAction = LogPutError;
+			lLogAction = LogPutSettingError;
     		xMessCreateError(lSetting.sBuffer, sizeof(lSetting.sBuffer), ERROR_LENGTH);
 		}
 	}
 	lIP = sGetRemoteIP(pReq);
 	xLogEntry(lLogAction, lIP);
 	httpd_resp_set_type(pReq, TYPE_JSON);
-	httpd_resp_send(pReq, lSetting, strlen(lSetting));
-	free(lSetting);
+	httpd_resp_send(pReq, lSetting.sBuffer, strlen(lSetting.sBuffer));
 	return lResult;
 }
 

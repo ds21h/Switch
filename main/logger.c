@@ -15,6 +15,8 @@
 #define LOG_VERSION			100
 #define LOG_NUMBER_ENTRIES	250
 
+static char* mLogText[] = {"None", "Log Init", "GET Switch", "GET Switch mult.", "GET Switch Err.", "GET Setting", "GET Setting Err.", "GET Log", "GET Log mult.", "GET Log Err.", "Restart", "Restart Err.", "PUT Switch On", "PUT Switch Off", "PUT Switch Err.", "PUT Setting", "PUT Setting Err."};
+
 struct log_entry{
 	long sTime;
 	uint8 sAction;
@@ -43,6 +45,14 @@ int xLogAction(int pEntry){
 		return mLog.sEntry[pEntry].sAction;
 	} else {
 		return 0;
+	}
+}
+
+void xLogActionStr(int pEntry, char * pBuffer, int pLength){
+	memset(pBuffer, 0, pLength);
+	if (pEntry >= 0 && pEntry < LOG_NUMBER_ENTRIES){
+		strncpy(pBuffer, mLogText[mLog.sEntry[pEntry].sAction], pLength);
+		pBuffer[pLength - 1] = 0;
 	}
 }
 

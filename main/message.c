@@ -121,7 +121,7 @@ void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
 	cJSON *lEntryTime;
 	cJSON *lEntryIP;
 	int lTimeInt;
-	char lTimeS[20];
+	char lWorkS[20];
 	uint32 lIpInt;
 	int lSeq;
 	int lCount;
@@ -136,8 +136,8 @@ void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
 	lCurrent = cJSON_CreateNumber(xLogCurrent());
 	cJSON_AddItemToObject(lReply, "current", lCurrent);
 	lTimeInt = xTimeNow();
-	xTimeString(lTimeInt, lTimeS, sizeof(lTimeS));
-	lTime = cJSON_CreateString(lTimeS);
+	xTimeString(lTimeInt, lWorkS, sizeof(lWorkS));
+	lTime = cJSON_CreateString(lWorkS);
 	cJSON_AddItemToObject(lReply, "time", lTime);
 	lLog = cJSON_CreateArray();
 	cJSON_AddItemToObject(lReply, "log", lLog);
@@ -156,11 +156,12 @@ void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
 		cJSON_AddItemToArray(lLog, lLogEntry);
 		lEntrySeq = cJSON_CreateNumber(lSeq);
 		cJSON_AddItemToObject(lLogEntry, "entry", lEntrySeq);
-		lEntryAction = cJSON_CreateNumber(xLogAction(lSeq));
+		xLogActionStr(lSeq, lWorkS, sizeof(lWorkS));
+		lEntryAction = cJSON_CreateString(lWorkS);
 		cJSON_AddItemToObject(lLogEntry, "action", lEntryAction);
 		lTimeInt = xLogTime(lSeq);
-		xTimeString(lTimeInt, lTimeS, sizeof(lTimeS));
-		lEntryTime = cJSON_CreateString(lTimeS);
+		xTimeString(lTimeInt, lWorkS, sizeof(lWorkS));
+		lEntryTime = cJSON_CreateString(lWorkS);
 		cJSON_AddItemToObject(lLogEntry, "time", lEntryTime);
 		lIpInt = xLogIP(lSeq);
 		lEntryIP = cJSON_CreateString(ip4addr_ntoa((struct ip4_addr *)&lIpInt));
@@ -175,7 +176,7 @@ void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
 	cJSON_Delete(lReply);
 }
 
-void xMessRestart(struct MessRestart pRestart){
+void xMessRestart(struct MessRestart * pRestart){
 	cJSON *lReply;
 	cJSON *lResult;
 	cJSON *lText;
@@ -188,7 +189,7 @@ void xMessRestart(struct MessRestart pRestart){
 	cJSON_AddItemToObject(lReply, "result", lResult);
 	lText = cJSON_CreateString("Restart requested");
 	cJSON_AddItemToObject(lReply, "text", lText);
-	cJSON_PrintPreallocated(lReply, pRestart.sBuffer, sizeof(pRestart.sBuffer), false);
+	cJSON_PrintPreallocated(lReply, pRestart->sBuffer, sizeof(pRestart->sBuffer), false);
 	cJSON_Delete(lReply);
 
     lQueueItem.qAction = ActionRestart;
@@ -199,7 +200,6 @@ void xMessSetSwitch(struct MessSwitch * pSwitch){
 	cJSON *lRequest = NULL;
 	cJSON *lStatus = NULL;
 
-	pSwitch->sResult.sProcessResult = true;
 	lRequest = cJSON_Parse(pSwitch->sBuffer);
 	if (lRequest == NULL){
 		pSwitch->sResult.sProcessInfo = 9;
