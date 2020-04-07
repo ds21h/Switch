@@ -27,13 +27,21 @@ struct MessRestart{
 };
 
 struct MessLog{
+	struct {
+		bool sFirst;
+		bool sLast;
+		int sStart;
+		int sMax;
+	} sLogInfo;
 	char sBuffer[1024];
 };
 
 
 void xMessSwitchStatus(struct MessSwitch * pSwitch);
 void xMessSwitchSetting(struct MessSetting * pSetting);
-void xMessSwitchLog(int32 pStart, struct MessLog * pLog);
+void xMessSwitchLogInit(int32 pStart, int32 pMax, struct MessLog * pLog);
+void xMessSwitchLogContent(struct MessLog * pLog);
+void xMessSwitchLogEnd(struct MessLog * pLog);
 void xMessRestart(struct MessRestart * pRestart);
 void xMessSetSwitch(struct MessSwitch * pSwitch);
 void xMessSetSetting(struct MessSetting * pSetting);

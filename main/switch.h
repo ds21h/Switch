@@ -11,6 +11,7 @@
 bool xSwitchStatus();
 void xSwitchOn();
 void xSwitchOff();
+bool xSwitchFlip();
 void xSwitchInit();
 
 #endif /* MAIN_SWITCH_H_ */

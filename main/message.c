@@ -22,6 +22,8 @@
 #define ERROR_NO_ACTION	"No action specified"
 #define ERROR_VALUE		"Incorrect value specified"
 
+#define LOGENTRY_LENGTH	100
+
 void xMessSwitchStatus(struct MessSwitch * pSwitch){
 	cJSON *lReply;
 	cJSON *lResult;
@@ -108,13 +110,7 @@ void xMessSwitchSetting(struct MessSetting * pSetting){
 	cJSON_Delete(lReply);
 }
 
-void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
-	cJSON *lReply;
-	cJSON *lResult;
-	cJSON *lNumber;
-	cJSON *lCurrent;
-	cJSON *lTime;
-	cJSON *lLog;
+void sGetLogEntry(int pEntry, char * pBuffer){
 	cJSON *lLogEntry;
 	cJSON *lEntrySeq;
 	cJSON *lEntryAction;
@@ -123,10 +119,55 @@ void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
 	int lTimeInt;
 	char lWorkS[20];
 	uint32 lIpInt;
-	int lSeq;
-	int lCount;
+
+	lLogEntry = cJSON_CreateObject();
+//	cJSON_AddItemToArray(lLog, lLogEntry);
+	lEntrySeq = cJSON_CreateNumber(pEntry);
+	cJSON_AddItemToObject(lLogEntry, "entry", lEntrySeq);
+	xLogActionStr(pEntry, lWorkS, sizeof(lWorkS));
+	lEntryAction = cJSON_CreateString(lWorkS);
+	cJSON_AddItemToObject(lLogEntry, "action", lEntryAction);
+	lTimeInt = xLogTime(pEntry);
+	xTimeString(lTimeInt, lWorkS, sizeof(lWorkS));
+	lEntryTime = cJSON_CreateString(lWorkS);
+	cJSON_AddItemToObject(lLogEntry, "time", lEntryTime);
+	lIpInt = xLogIP(pEntry);
+	lEntryIP = cJSON_CreateString(ip4addr_ntoa((struct ip4_addr *)&lIpInt));
+	cJSON_AddItemToObject(lLogEntry, "ip", lEntryIP);
+
+	cJSON_PrintPreallocated(lLogEntry, pBuffer, LOGENTRY_LENGTH, false);
+	cJSON_Delete(lLogEntry);
+}
+
+void xMessSwitchLogInit(int32 pStart, int32 pMax, struct MessLog * pLog){
+	cJSON *lReply;
+	cJSON *lResult;
+	cJSON *lNumber;
+	cJSON *lCurrent;
+	cJSON *lTime;
+	cJSON *lLog;
+	int lTimeInt;
+	char lWorkS[20];
+	int lInsertPos;
 
 	memset(pLog, 0, sizeof(struct MessLog));
+
+	pLog->sLogInfo.sFirst = true;
+	pLog->sLogInfo.sLast = false;
+	if (pStart < 0){
+		pLog->sLogInfo.sStart = xLogCurrent() - 1;
+	} else {
+		if (pStart < xLogNumber()){
+			pLog->sLogInfo.sStart = pStart;
+		} else {
+			pLog->sLogInfo.sStart = xLogNumber() - 1;
+		}
+	}
+	if (pMax < 0){
+		pLog->sLogInfo.sMax = 25;
+	} else {
+		pLog->sLogInfo.sMax = pMax;
+	}
 
 	lReply = cJSON_CreateObject();
 	lResult = cJSON_CreateString("OK");
@@ -141,39 +182,54 @@ void xMessSwitchLog(int32 pStart, struct MessLog * pLog){
 	cJSON_AddItemToObject(lReply, "time", lTime);
 	lLog = cJSON_CreateArray();
 	cJSON_AddItemToObject(lReply, "log", lLog);
-
-	if (pStart < 0){
-		lSeq = xLogCurrent() - 1;
-	} else {
-		if (pStart < xLogNumber()){
-			lSeq = pStart;
-		} else {
-			lSeq = xLogNumber() - 1;
-		}
-	}
-	for (lCount = 0; lCount < 10; lCount++){
-		lLogEntry = cJSON_CreateObject();
-		cJSON_AddItemToArray(lLog, lLogEntry);
-		lEntrySeq = cJSON_CreateNumber(lSeq);
-		cJSON_AddItemToObject(lLogEntry, "entry", lEntrySeq);
-		xLogActionStr(lSeq, lWorkS, sizeof(lWorkS));
-		lEntryAction = cJSON_CreateString(lWorkS);
-		cJSON_AddItemToObject(lLogEntry, "action", lEntryAction);
-		lTimeInt = xLogTime(lSeq);
-		xTimeString(lTimeInt, lWorkS, sizeof(lWorkS));
-		lEntryTime = cJSON_CreateString(lWorkS);
-		cJSON_AddItemToObject(lLogEntry, "time", lEntryTime);
-		lIpInt = xLogIP(lSeq);
-		lEntryIP = cJSON_CreateString(ip4addr_ntoa((struct ip4_addr *)&lIpInt));
-		cJSON_AddItemToObject(lLogEntry, "ip", lEntryIP);
-
-		lSeq--;
-		if (lSeq < 0){
-			lSeq = xLogNumber() - 1;
-		}
-	}
 	cJSON_PrintPreallocated(lReply, pLog->sBuffer, sizeof(pLog->sBuffer), false);
 	cJSON_Delete(lReply);
+
+	lInsertPos = strlen(pLog->sBuffer) - 2;
+	pLog->sBuffer[lInsertPos] = 0;
+}
+
+void xMessSwitchLogContent(struct MessLog * pLog){
+	int lInsertPos;
+	int lMaxEntries;
+	int lCount;
+
+	memset(pLog->sBuffer, 0, sizeof(pLog->sBuffer));
+	lMaxEntries = sizeof(pLog->sBuffer) / LOGENTRY_LENGTH;
+	lInsertPos = 0;
+	lCount = 0;
+	while (lCount < lMaxEntries){
+		if (pLog->sLogInfo.sMax > 0){
+			if (xLogAction(pLog->sLogInfo.sStart) != LogNone){
+				if (pLog->sLogInfo.sFirst){
+					pLog->sLogInfo.sFirst = false;
+				} else {
+					pLog->sBuffer[lInsertPos] = ',';
+					lInsertPos++;
+				}
+				sGetLogEntry(pLog->sLogInfo.sStart, pLog->sBuffer + lInsertPos);
+				pLog->sLogInfo.sMax--;
+
+				lInsertPos = strlen(pLog->sBuffer);
+				lCount++;
+			}
+			if (pLog->sLogInfo.sStart == xLogCurrent() || pLog->sLogInfo.sMax <= 0){
+				pLog->sLogInfo.sLast = true;
+				break;
+			}
+			pLog->sLogInfo.sStart--;
+			if (pLog->sLogInfo.sStart < 0){
+				pLog->sLogInfo.sStart = xLogNumber() - 1;
+			}
+		} else {
+			pLog->sLogInfo.sLast = true;
+			break;
+		}
+	}
+}
+
+void xMessSwitchLogEnd(struct MessLog * pLog){
+	strncpy(pLog->sBuffer, "]}", sizeof(pLog->sBuffer));
 }
 
 void xMessRestart(struct MessRestart * pRestart){

@@ -11,6 +11,7 @@
 #include "setting.h"
 #include "FreeRTOS/FreeRTOS.h"
 #include "FreeRTOS/timers.h"
+#include "button.h"
 
 #define SETTINGVERSION		1
 
@@ -142,6 +143,7 @@ void xSettingSetButton(bool pButton){
 	if (mSetting.sButton != pButton){
 		mSetting.sButton = pButton;
 		mSettingChanged = true;
+		xButtonSet();
 	}
 }
 

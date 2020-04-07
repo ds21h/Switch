@@ -25,37 +25,37 @@ esp_err_t hPutSetting(httpd_req_t *pReq);
 httpd_handle_t mServer = NULL;
 
 httpd_uri_t hGetSwitchCtrl = {
-		.uri = "/switch",
+		.uri = "/Switch",
 		.method = HTTP_GET,
 		.handler = hGetSwitch,
 		.user_ctx = NULL };
 
 httpd_uri_t hGetSettingCtrl = {
-		.uri = "/switch/setting",
+		.uri = "/Switch/Setting",
 		.method = HTTP_GET,
 		.handler = hGetSetting,
 		.user_ctx = NULL };
 
 httpd_uri_t hGetLogCtrl = {
-		.uri = "/switch/log",
+		.uri = "/Switch/Log",
 		.method = HTTP_GET,
 		.handler = hGetLog,
 		.user_ctx = NULL };
 
 httpd_uri_t hGetRestartCtrl = {
-		.uri = "/switch/restart",
+		.uri = "/Switch/Restart",
 		.method = HTTP_GET,
 		.handler = hGetRestart,
 		.user_ctx = NULL };
 
 httpd_uri_t hPutSwitchCtrl = {
-		.uri = "/switch",
+		.uri = "/Switch",
 		.method = HTTP_PUT,
 		.handler = hPutSwitch,
 		.user_ctx = NULL };
 
 httpd_uri_t hPutSettingCtrl = {
-		.uri = "/switch/setting",
+		.uri = "/Switch/Setting",
 		.method = HTTP_PUT,
 		.handler = hPutSetting,
 		.user_ctx = NULL };
@@ -125,14 +125,14 @@ esp_err_t hGetSetting(httpd_req_t *pReq) {
 	return ESP_OK;
 }
 
-int32 sDecodeStart(char * pBuffer){
+int32 sDecodeNum(char * pBuffer, int pLength){
 	int32 lResult;
 	int32 lFactor;
 	char * lPos;
 
 	lFactor = 1;
 	lResult = 0;
-	for (lPos = pBuffer + 3; lPos >= pBuffer; lPos--){
+	for (lPos = pBuffer + pLength - 1; lPos >= pBuffer; lPos--){
 		if (*lPos >= '0' && *lPos <= '9'){
 			lResult += ((*lPos - '0') * lFactor);
 			lFactor *= 10;
@@ -149,35 +149,53 @@ int32 sDecodeStart(char * pBuffer){
 esp_err_t hGetLog(httpd_req_t *pReq) {
 	size_t lLength;
 	struct MessLog lLog;
-    char* lStartBuffer;
+    char* lWorkBuffer;
     enum LogItem lLogAction;
     uint32 lIP;
     esp_err_t lResult;
     int32 lStart;
+    int32 lMax;
+
+    httpd_resp_set_type(pReq, TYPE_JSON);
 
 	memset(&lLog, 0, sizeof(lLog));
 
 	lLength = httpd_req_get_url_query_len(pReq) + 1;
-	if (lLength > 10) {
+	if (lLength > 18) {
 		lLogAction = LogGetLogError;
 		xMessCreateError(lLog.sBuffer, sizeof(lLog.sBuffer), ERROR_URL);
 	} else {
 		lStart = -1;
+		lMax = -1;
 		lResult = httpd_req_get_url_query_str(pReq, lLog.sBuffer, sizeof(lLog.sBuffer));
 		if (lResult == ESP_OK){
-			lStartBuffer = lLog.sBuffer + 100;
-			lResult = httpd_query_key_value(lLog.sBuffer, "start", lStartBuffer, 4);
+			lWorkBuffer = lLog.sBuffer + 100;
+			lResult = httpd_query_key_value(lLog.sBuffer, "start", lWorkBuffer, 4);
 			if (lResult == ESP_OK){
-				lStart = sDecodeStart(lStartBuffer);
+				lStart = sDecodeNum(lWorkBuffer, 4);
+			}
+			memset(lWorkBuffer, 0, 4);
+			lResult = httpd_query_key_value(lLog.sBuffer, "max", lWorkBuffer, 4);
+			if (lResult == ESP_OK){
+				lMax = sDecodeNum(lWorkBuffer, 4);
 			}
 		}
 		lLogAction = LogGetLog;
-		xMessSwitchLog(lStart, &lLog);
+		xMessSwitchLogInit(lStart, lMax, &lLog);
+		httpd_resp_send_chunk(pReq, lLog.sBuffer, strlen(lLog.sBuffer));
+		while (!lLog.sLogInfo.sLast){
+			xMessSwitchLogContent(&lLog);
+			if (strlen(lLog.sBuffer) > 0){
+				httpd_resp_send_chunk(pReq, lLog.sBuffer, strlen(lLog.sBuffer));
+			}
+		}
+		xMessSwitchLogEnd(&lLog);
 	}
+	httpd_resp_send_chunk(pReq, lLog.sBuffer, strlen(lLog.sBuffer));
+	httpd_resp_send_chunk(pReq, lLog.sBuffer, 0);
+
 	lIP = sGetRemoteIP(pReq);
 	xLogEntry(lLogAction, lIP);
-	httpd_resp_set_type(pReq, TYPE_JSON);
-	httpd_resp_send(pReq, lLog.sBuffer, strlen(lLog.sBuffer));
 
 	return ESP_OK;
 }

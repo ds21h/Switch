@@ -40,7 +40,7 @@ int xLogCurrent(){
 	return mLog.sCurrent;
 }
 
-int xLogAction(int pEntry){
+enum LogItem xLogAction(int pEntry){
 	if (pEntry >= 0 && pEntry < LOG_NUMBER_ENTRIES){
 		return mLog.sEntry[pEntry].sAction;
 	} else {
@@ -133,6 +133,6 @@ void xLogInit(){
 	if (mLogLevel > 0){
 		sLogInit();
 		lAction = LogInit;
-    	xLogEntry(lAction, mLogLevel);
+    	xLogEntry(lAction, 0);
 	}
 }

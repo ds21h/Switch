@@ -32,6 +32,11 @@ void xSwitchOff(){
 	sSwitchSet(false);
 }
 
+bool xSwitchFlip(){
+	sSwitchSet(!mSwitchStatus);
+	return mSwitchStatus;
+}
+
 void xSwitchInit(){
     gpio_config_t lConf;
     uint32 lPinMask;

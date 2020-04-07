@@ -32,7 +32,7 @@ LogPutSettingError
 
 int xLogNumber();
 int xLogCurrent();
-int xLogAction(int pEntry);
+enum LogItem xLogAction(int pEntry);
 void xLogActionStr(int pEntry, char * pBuffer, int pLength);
 long xLogTime(int pEntry);
 uint32 xLogIP(int pEntry);

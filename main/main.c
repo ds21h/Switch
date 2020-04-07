@@ -14,6 +14,7 @@
 #include "main_wifi.h"
 #include "main_time.h"
 #include "logger.h"
+#include "button.h"
 
 TimerHandle_t mHartBeat;
 int mStartCounter;
@@ -49,9 +50,10 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
 	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
 	    xAsyncInit();
+	    xLogInit();
+	    xButtonSet();
 	    xWifiStart();
 	    xTimeInit();
-	    xLogInit();
 /*		ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
 		ets_uart_printf("Flash chip id: %x\r\n", spi_flash_get_id());
 		switch (system_upgrade_userbin_check()){
@@ -80,8 +82,8 @@ void app_main() {
 	    lResult = nvs_flash_init();
 	}
 	ESP_ERROR_CHECK(lResult);
-	xSwitchInit();
     xSettingInit();
+	xSwitchInit();
     xWifiInit();
 	mHartBeat = xTimerCreate("HartBeat", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, tcbHeartBeat);
 	mStartCounter = 0;
