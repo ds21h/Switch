@@ -9,9 +9,11 @@
 #define MAIN_SWITCH_H_
 
 bool xSwitchStatus();
+int xSwitchTimeOn();
 void xSwitchOn();
 void xSwitchOff();
 bool xSwitchFlip();
+void xSwitchTimeTick();
 void xSwitchInit();
 
 #endif /* MAIN_SWITCH_H_ */

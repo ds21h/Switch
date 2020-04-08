@@ -25,6 +25,7 @@ LogGetRestart,
 LogGetRestartError,
 LogPutSwitchOn,
 LogPutSwitchOff,
+LogPutSwitchAutoOff,
 LogPutSwitchError,
 LogPutSetting,
 LogPutSettingError

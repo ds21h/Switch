@@ -7,25 +7,48 @@
 #include "switch_config.h"
 #include "setting.h"
 #include "driver/gpio.h"
+#include "logger.h"
 
-static bool mSwitchStatus = false;
-static int mSwitchPort;
-static int mOn;
-static int mOff;
+bool mSwitchStatus = false;
+int mSwitchPort;
+int mOn;
+int mOff;
+int mTimeOn;
+
 
 bool xSwitchStatus(){
 	return mSwitchStatus;
 }
 
+int xSwitchTimeOn(){
+	if (mSwitchStatus){
+		return mTimeOn;
+	} else {
+		return 0;
+	}
+}
 void sSwitchSet(bool pValue){
 	mSwitchStatus = pValue;
 
     gpio_set_level(mSwitchPort, mSwitchStatus ? mOn : mOff);
+    mTimeOn = 0;
+}
+
+void xSwitchTimeTick(){
+    enum LogItem lLogAction;
+
+    if (mSwitchStatus){
+		mTimeOn++;
+		if (xSettingAutoOff() > 0 && mTimeOn > xSettingAutoOff()){
+			sSwitchSet(false);
+			lLogAction = LogPutSwitchAutoOff;
+			xLogEntry(lLogAction, 0);
+		}
+	}
 }
 
 void xSwitchOn(){
 	sSwitchSet(true);
-//	xInitOff(pAutoOff);
 }
 
 void xSwitchOff(){

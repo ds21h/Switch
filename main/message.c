@@ -34,6 +34,9 @@ void xMessSwitchStatus(struct MessSwitch * pSwitch){
 	cJSON *lDescr;
 	cJSON *lModel;
 	cJSON *lStatus;
+	cJSON *lTimeOn;
+	cJSON *lLogLevel;
+	cJSON *lButton;
 
 	memset(pSwitch, 0, sizeof(struct MessSwitch));
 
@@ -54,6 +57,12 @@ void xMessSwitchStatus(struct MessSwitch * pSwitch){
 	cJSON_AddItemToObject(lReply, "model", lModel);
 	lStatus = cJSON_CreateString((xSwitchStatus()) ? "on" : "off");
 	cJSON_AddItemToObject(lReply, "status", lStatus);
+	lTimeOn = cJSON_CreateNumber(xSwitchTimeOn());
+	cJSON_AddItemToObject(lReply, "time-on", lTimeOn);
+	lLogLevel = cJSON_CreateNumber(xSettingLogLevel());
+	cJSON_AddItemToObject(lReply, "loglevel", lLogLevel);
+	lButton = cJSON_CreateString((xSettingButton()) ? "on" : "off");
+	cJSON_AddItemToObject(lReply, "button", lButton);
 	cJSON_PrintPreallocated(lReply, pSwitch->sBuffer, sizeof(pSwitch->sBuffer), false);
 	cJSON_Delete(lReply);
 }

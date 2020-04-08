@@ -15,7 +15,7 @@
 #define LOG_VERSION			100
 #define LOG_NUMBER_ENTRIES	250
 
-static char* mLogText[] = {"None", "Log Init", "GET Switch", "GET Switch mult.", "GET Switch Err.", "GET Setting", "GET Setting Err.", "GET Log", "GET Log mult.", "GET Log Err.", "Restart", "Restart Err.", "PUT Switch On", "PUT Switch Off", "PUT Switch Err.", "PUT Setting", "PUT Setting Err."};
+static char* mLogText[] = {"None", "Log Init", "GET Switch", "GET Switch mult.", "GET Switch Err.", "GET Setting", "GET Setting Err.", "GET Log", "GET Log mult.", "GET Log Err.", "Restart", "Restart Err.", "Switch On", "Switch Off", "Switch AutoOff", "PUT Switch Err.", "PUT Setting", "PUT Setting Err."};
 
 struct log_entry{
 	long sTime;

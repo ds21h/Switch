@@ -25,6 +25,8 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	int32 lTime;
 	char lTimeS[20];
 
+	xSwitchTimeTick();
+
 	mStartCounter++;
 	if (xWifiConnected()) {
 		lTest = (mStartCounter / 10) * 10;
