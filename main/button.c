@@ -31,16 +31,19 @@ void hButtonProcess(void *pParameters){
     enum LogItem lLogAction;
 
 	while (1){
-		xTaskNotifyWait(0x0ffffffff, 0x0ffffffff, NULL, portMAX_DELAY);
-		lSwitchStatus = xSwitchFlip();
-		if (lSwitchStatus){
-			lLogAction = LogPutSwitchOn;
-		} else {
-			lLogAction = LogPutSwitchOff;
-		}
-		xLogEntry(lLogAction, 0);
+		xTaskNotifyWait(0xffffffff, 0xffffffff, NULL, portMAX_DELAY);
+		vTaskDelay(pdMS_TO_TICKS(100));
+		if (gpio_get_level(mButtonPin) == 0){
+			lSwitchStatus = xSwitchFlip();
+			if (lSwitchStatus){
+				lLogAction = LogPutSwitchOn;
+			} else {
+				lLogAction = LogPutSwitchOff;
+			}
+			xLogEntry(lLogAction, 0);
 
-		vTaskDelay(pdMS_TO_TICKS(500));
+			vTaskDelay(pdMS_TO_TICKS(400));
+		}
 		mInputBlock = false;
 	}
 }
@@ -80,11 +83,13 @@ void sButtonEnable(){
     uint32 lPinMask;
     BaseType_t lResult;
 
-	if (xSettingSwitchModel() == 1){
-		mButtonPin = 0;
-	} else {
-		mButtonPin = 2;
-	}
+    if (mButtonPin < 0){
+    	if (xSettingSwitchModel() == 1){
+    		mButtonPin = 0;
+    	} else {
+    		mButtonPin = 2;
+    	}
+    }
     lConf.intr_type = GPIO_INTR_NEGEDGE;
     lConf.mode = GPIO_MODE_INPUT;
     lPinMask = 1ULL << mButtonPin;
