@@ -99,9 +99,15 @@
                         					
                     </folderInfo>
                     					
+                    <fileInfo id="cdt.managedbuild.toolchain.gnu.cygwin.base.1755033173.274711767" name="button.c" rcbsApplicability="disable" resourcePath="main/button.c" toolsToInvoke="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.862474073.1132388867">
+                        						
+                        <tool id="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.862474073.1132388867" name="Cygwin C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.cygwin.base.862474073"/>
+                        					
+                    </fileInfo>
+                    					
                     <sourceEntries>
                         						
-                        <entry excluding="main/button.c|button.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="button.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				

@@ -194,12 +194,9 @@ void xSettingWrite(){
 		if (lResult == ESP_OK){
 			vTaskDelay(1);
 			lResult = nvs_set_blob(lHandle, "setting", &mSetting, sizeof(mSetting));
-			printf("Write Setting. Result %d\n", lResult);
 			vTaskDelay(1);
 			lResult = nvs_commit(lHandle);
-			printf("Commit write. Result %d\n", lResult);
 			nvs_close(lHandle);
-			printf("Close. Result %d\n", lResult);
 		}
 		mSettingChanged = false;
 	}
@@ -220,25 +217,19 @@ void xSettingInit(){
 	esp_err_t lResult;
 	size_t lLength;
 
-	printf("Init setting\n");
 	mSettingChanged = false;
 	lResult = nvs_open("switch", NVS_READONLY, &lHandle);
 	if (lResult == ESP_OK){
-		printf("NVS opened\n");
 		lLength = sizeof(mSetting);
 		lResult = nvs_get_blob(lHandle, "setting", &mSetting, &lLength);
-		printf("Setting read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			xSettingReset();
 		}
-		printf("NVS read, closing\n");
 		nvs_close(lHandle);
-		printf("NVS closed\n");
 		if (mSetting.sVersion != SETTINGVERSION){
 			xSettingReset();
 		}
 	} else {
-		printf("NVS open failed. Error %d\n", lResult);
 		xSettingReset();
 	}
 }

@@ -57,25 +57,12 @@ void xAsyncProcess(struct QueueItem pItem){
 }
 
 void xAsyncInit(){
-	BaseType_t lResult;
-
 	if (mAsyncQueue != NULL){
-		printf("Async queue already exists. Delete!\n");
 		vQueueDelete(mAsyncQueue);
 	}
 	mAsyncQueue = xQueueCreate( 2, sizeof(struct QueueItem));
-	if (mAsyncQueue == NULL){
-		printf("Async queue creation failed\n");
-	} else {
-		printf("Async queue created\n");
-	}
 
 	if (mAsyncQueue != NULL){
-		lResult = xTaskCreate(hAsync, "Async", configMINIMAL_STACK_SIZE, NULL, 6, NULL);
-		if (lResult == pdPASS){
-			printf("Async task created\n");
-		} else {
-			printf("Async task failed. Result: %d\n", lResult);
-		}
+		xTaskCreate(hAsync, "Async", configMINIMAL_STACK_SIZE, NULL, 6, NULL);
 	}
 }

@@ -18,6 +18,7 @@
 
 TimerHandle_t mHartBeat;
 int mStartCounter;
+bool mCountSingle;
 
 void tcbHeartBeat(TimerHandle_t pTimer) {
 	static int lTest;
@@ -28,29 +29,31 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	xSwitchTimeTick();
 
 	mStartCounter++;
-	if (xWifiConnected()) {
+	if (mCountSingle){
+		printf("Counting....%d\n", mStartCounter);
+	} else {
 		lTest = (mStartCounter / 10) * 10;
 		if (mStartCounter == lTest) {
 			lTime = xTimeNow();
 			xTimeString(lTime, lTimeS, sizeof(lTimeS));
 			printf("Counting....%d, Time %s\n", mStartCounter, lTimeS);
 		}
-	} else {
-		if (mStartCounter == STARTPAUSE + 30){
-			lFailCount = xWifiFail();
-			if (lFailCount < 0){
-				printf("Connection failed too often. Reset!\n");
-			} else {
-				printf("Connection failed. Counter: %d\n", lFailCount);
-			}
+	}
+
+	if (!xWifiConnected() && mStartCounter == STARTPAUSE + 30) {
+		lFailCount = xWifiFail();
+		if (lFailCount < 0){
+			printf("Connection failed too often. Reset!\n");
+		} else {
+			printf("Connection failed. Counter: %d\n", lFailCount);
 		}
-		printf("Counting....%d\n", mStartCounter);
 	}
 
 	if (mStartCounter == STARTPAUSE){
 		printf("SDK version:%s\n", esp_get_idf_version());
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
 	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
+	    mCountSingle = false;
 	    xAsyncInit();
 	    xLogInit();
 	    xButtonSet();
@@ -89,5 +92,6 @@ void app_main() {
     xWifiInit();
 	mHartBeat = xTimerCreate("HartBeat", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, tcbHeartBeat);
 	mStartCounter = 0;
+	mCountSingle = true;
 	xTimerStart(mHartBeat, 100);
 }

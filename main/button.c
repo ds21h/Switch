@@ -81,7 +81,6 @@ void sButtonDisable(){
 void sButtonEnable(){
     gpio_config_t lConf;
     uint32 lPinMask;
-    BaseType_t lResult;
 
     if (mButtonPin < 0){
     	if (xSettingSwitchModel() == 1){
@@ -99,12 +98,7 @@ void sButtonEnable(){
     gpio_config(&lConf);
 
     mProcessTask = NULL;
-	lResult = xTaskCreate(hButtonProcess, "Button", configMINIMAL_STACK_SIZE, NULL, 6, &mProcessTask);
-	if (lResult == pdPASS){
-		printf("ButtonTask created\n");
-	} else {
-		printf("ButtonTask not created\n");
-	}
+	xTaskCreate(hButtonProcess, "Button", configMINIMAL_STACK_SIZE, NULL, 6, &mProcessTask);
     gpio_install_isr_service(0);
     gpio_isr_handler_add(mButtonPin, hButtonISR, NULL);
 

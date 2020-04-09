@@ -35,23 +35,17 @@ void sConnectionSuccess(){
 	esp_err_t lResult;
 	int8 lFailCount;
 
-	printf("Init setting\n");
 	lResult = nvs_open("fail", NVS_READWRITE, &lHandle);
 	if (lResult == ESP_OK){
-		printf("NVS opened\n");
 		lResult = nvs_get_i8(lHandle, "count", &lFailCount);
-		printf("Count read, Error code : %d\n", lResult);
 		if (lResult == ESP_OK){
 			if (lFailCount != 0){
 				lFailCount = 0;
 				lResult = nvs_set_i8(lHandle, "count", lFailCount);
-				printf("Count reset, Error code : %d\n", lResult);
 				lResult = nvs_commit(lHandle);
-				printf("Commit, Error code : %d\n", lResult);
 			}
 		}
 		nvs_close(lHandle);
-		printf("NVS closed\n");
 	}
 }
 
@@ -62,13 +56,10 @@ int8 xWifiFail(){
 	bool lReset;
 
 	mConnectionStatus = ConnectionFailed;
-	printf("Set failed count\n");
 	lReset = false;
 	lResult = nvs_open("fail", NVS_READWRITE, &lHandle);
 	if (lResult == ESP_OK){
-		printf("NVS opened\n");
 		lResult = nvs_get_i8(lHandle, "count", &lFailCount);
-		printf("Count read, Error code : %d\n", lResult);
 		if (lResult != ESP_OK){
 			lFailCount = 0;
 		}
@@ -77,11 +68,8 @@ int8 xWifiFail(){
 			lReset = true;
 		}
 		lResult = nvs_set_i8(lHandle, "count", lFailCount);
-		printf("Count write, Error code : %d\n", lResult);
 		lResult = nvs_commit(lHandle);
-		printf("Commit, Error code : %d\n", lResult);
 		nvs_close(lHandle);
-		printf("NVS closed\n");
 	} else {
 		lFailCount = 0;
 	}
@@ -123,17 +111,17 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 			printf("Station disconnected\n");
 			printf("Disconnect reason : %d\n", lDisconnect->reason);
 			switch (mConnectionStatus){
+			case ConnectionConnected:
+				mConnectionStatus = ConnectionMaking;
+				xStopServer();
+				printf("Retry Connect\n");
+				lResult = esp_wifi_connect();
+				ESP_ERROR_CHECK(lResult);
+				break;
 			case ConnectionClosing:
 				printf("Disconnect, no retry!\n");
 				break;
-			case ConnectionFailed:
-				lResult = esp_wifi_stop();
-				ESP_ERROR_CHECK(lResult);
-				printf("Wifi stopped\n");
-				break;
 			default:
-				mConnectionStatus = ConnectionMaking;
-				xStopServer();
 				printf("Retry Connect\n");
 				lResult = esp_wifi_connect();
 				ESP_ERROR_CHECK(lResult);
@@ -212,21 +200,16 @@ void sInitialiseStation(){
 	memset(&lWifiConfig, 0, sizeof(lWifiConfig));
 	memcpy(lWifiConfig.sta.ssid, xSettingSsId(), strlen(xSettingSsId()));
 	memcpy(lWifiConfig.sta.password, xSettingPassword(), strlen(xSettingPassword()));
-	printf("Setting WiFi Station on SSID: %s,\nPassword: %s\n", lWifiConfig.sta.ssid, lWifiConfig.sta.password);
+	printf("Setting WiFi Station on SSID: %s\n", lWifiConfig.sta.ssid);
 	lResult = esp_wifi_set_mode(WIFI_MODE_STA);
 	ESP_ERROR_CHECK(lResult);
 	lResult = esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig);
 	ESP_ERROR_CHECK(lResult);
 
-	printf("Test MAC\n");
 	memcpy(lMac, xSettingMac(), sizeof(lMac));
-	printf("MAC of Setting: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
 	if (xSettingMacPresent()){
 		lResult = esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
-		printf("Set MAC. Result %d\n", lResult);
 	}
-	esp_wifi_get_mac(ESP_IF_WIFI_STA, lMac);
-	printf("MAC of station: %02x%02x%02x%02x%02x%02x\n", MAC2STR(lMac));
 
 	lResult = esp_wifi_start();
 	ESP_ERROR_CHECK(lResult);
