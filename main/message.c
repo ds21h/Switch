@@ -7,22 +7,29 @@
 #include <ctype.h>
 #include <string.h>
 #include "switch_config.h"
-#include "message.h"
 #include "cJSON.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include <esp_http_server.h>
+#include "message.h"
 #include "setting.h"
 #include "switch.h"
 #include "logger.h"
 #include "main_async.h"
 #include "main_time.h"
+#include "main_ota.h"
 
 #define ERROR_PARSE		"JSON error"
 #define ERROR_NO_ACTION	"No action specified"
 #define ERROR_VALUE		"Incorrect value specified"
 
 #define LOGENTRY_LENGTH	100
+
+struct Version {
+	uint16 sMajor;
+	uint16 sMinor;
+	uint16 sRevision;
+};
 
 void xMessSwitchStatus(struct MessSwitch * pSwitch){
 	cJSON *lReply;
@@ -259,6 +266,108 @@ void xMessRestart(struct MessRestart * pRestart){
 
     lQueueItem.qAction = ActionRestart;
     xAsyncProcess(lQueueItem);
+}
+
+bool sParseVersion(struct Version *pVersion, const char *pVersionStr) {
+	const char *lPos;
+	int lVolgNr;
+	bool lResult;
+	uint16 lVersionPart[3] = { 0 };
+
+	lPos = pVersionStr;
+	lVolgNr = 0;
+	if (*lPos == 'v' || *lPos == 'V') {
+		lPos++;
+		lResult = true;
+		while (*lPos != '\0') {
+			if (isdigit((uint8)*lPos)) {
+				lVersionPart[lVolgNr] *= 10;
+				lVersionPart[lVolgNr] += *lPos - '0';
+			} else {
+				if (*lPos == '.') {
+					lVolgNr++;
+					if (lVolgNr >= 3) {
+						lResult = false;
+						break;
+					}
+				} else {
+					lResult = false;
+				}
+			}
+			lPos++;
+		}
+	} else {
+		lResult = false;
+	}
+	if (lResult == true) {
+		pVersion->sMajor = lVersionPart[0];
+		pVersion->sMinor = lVersionPart[1];
+		pVersion->sRevision = lVersionPart[2];
+	}
+	return lResult;
+}
+
+int sCompareVersion(struct Version *pVersion1, struct Version *pVersion2) {
+	int lResult;
+
+	lResult = pVersion1->sMajor - pVersion2->sMajor;
+	if (lResult == 0) {
+		lResult = pVersion1->sMinor - pVersion2->sMinor;
+		if (lResult == 0) {
+			lResult = pVersion1->sRevision - pVersion2->sRevision;
+		}
+	}
+	return lResult;
+}
+
+void xMessUpgrade(const char * pVersion, bool pForce, struct MessUpgrade * pUpgrade){
+	cJSON *lReply;
+	cJSON *lResult;
+	cJSON *lText;
+	struct Version lVersionOld;
+	struct Version lVersionNew;
+	int lCmp;
+	bool lReqOK;
+
+	memset(pUpgrade, 0, sizeof(struct MessUpgrade));
+
+	lReqOK = true;
+	if (sParseVersion(&lVersionNew, pVersion)){
+		if (!pForce){
+			if (sParseVersion(&lVersionOld, VERSION)){
+				lCmp = sCompareVersion(&lVersionNew, &lVersionOld);
+				if (lCmp == 0){
+					xMessCreateError(pUpgrade->sBuffer, sizeof(pUpgrade->sBuffer), "Upgrade: Already installed");
+					lReqOK = false;
+				} else {
+					if (lCmp < 0){
+						xMessCreateError(pUpgrade->sBuffer, sizeof(pUpgrade->sBuffer), "Upgrade: Old version");
+						lReqOK = false;
+					}
+				}
+			}
+		}
+	} else {
+		xMessCreateError(pUpgrade->sBuffer, sizeof(pUpgrade->sBuffer), "Upgrade: Version wrong");
+		lReqOK = false;
+	}
+
+	if (lReqOK){
+		lReply = cJSON_CreateObject();
+		lResult = cJSON_CreateString("OK");
+		cJSON_AddItemToObject(lReply, "result", lResult);
+		sprintf(pUpgrade->sBuffer, "Upgrade to version %s", pVersion);
+		lText = cJSON_CreateString(pUpgrade->sBuffer);
+		cJSON_AddItemToObject(lReply, "text", lText);
+		cJSON_PrintPreallocated(lReply, pUpgrade->sBuffer, sizeof(pUpgrade->sBuffer), false);
+		cJSON_Delete(lReply);
+
+		xOtaUpgrade(pVersion);
+
+	    pUpgrade->sResult.sProcessInfo = 0;
+	} else {
+	    pUpgrade->sResult.sProcessInfo = 9;
+	}
 }
 
 void xMessSetSwitch(struct MessSwitch * pSwitch){

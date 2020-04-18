@@ -5,6 +5,7 @@
 #include "nvs.h"
 #include "sys/param.h"
 #include "esp_system.h"
+#include "esp_ota_ops.h"
 #include "esp_netif.h"
 #include "esp_spi_flash.h"
 #include "esp_http_server.h"
@@ -25,6 +26,7 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	int8 lFailCount;
 	int32 lTime;
 	char lTimeS[20];
+	const esp_partition_t *lRunningPart;
 
 	xSwitchTimeTick();
 
@@ -50,6 +52,12 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	}
 
 	if (mStartCounter == STARTPAUSE){
+		lRunningPart = esp_ota_get_running_partition();
+		if (lRunningPart == NULL){
+			printf("No partition info available\n");
+		} else {
+			printf("Start partition: %s\n", lRunningPart->label);
+		}
 		printf("SDK version:%s\n", esp_get_idf_version());
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
 	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));

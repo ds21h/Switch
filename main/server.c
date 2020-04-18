@@ -13,12 +13,14 @@
 #include "logger.h"
 
 #define ERROR_URL 		"Query too long"
+#define ERROR_PAR 		"Invalid pars"
 #define ERROR_LENGTH	"Request too long"
 
 esp_err_t hGetSwitch(httpd_req_t *pReq);
 esp_err_t hGetSetting(httpd_req_t *pReq);
 esp_err_t hGetLog(httpd_req_t *pReq);
 esp_err_t hGetRestart(httpd_req_t *pReq);
+esp_err_t hGetUpgrade(httpd_req_t *pReq);
 esp_err_t hPutSwitch(httpd_req_t *pReq);
 esp_err_t hPutSetting(httpd_req_t *pReq);
 
@@ -46,6 +48,12 @@ httpd_uri_t hGetRestartCtrl = {
 		.uri = "/Switch/Restart",
 		.method = HTTP_GET,
 		.handler = hGetRestart,
+		.user_ctx = NULL };
+
+httpd_uri_t hGetUpgradeCtrl = {
+		.uri = "/Switch/Upgrade",
+		.method = HTTP_GET,
+		.handler = hGetUpgrade,
 		.user_ctx = NULL };
 
 httpd_uri_t hPutSwitchCtrl = {
@@ -223,6 +231,64 @@ esp_err_t hGetRestart(httpd_req_t *pReq) {
 	return ESP_OK;
 }
 
+esp_err_t hGetUpgrade(httpd_req_t *pReq) {
+	struct MessUpgrade lUpgrade;
+	size_t lLength;
+    enum LogItem lLogAction;
+    uint32 lIP;
+    esp_err_t lResult;
+    char lWork[13];
+    bool lForce = false;
+    bool lError;
+
+	memset(&lUpgrade, 0, sizeof(lUpgrade));
+
+	lLength = httpd_req_get_url_query_len(pReq) + 1;
+	if (lLength > 32) {
+		lLogAction = LogGetUpgradeError;
+		xMessCreateError(lUpgrade.sBuffer, sizeof(lUpgrade.sBuffer), ERROR_URL);
+	} else {
+		lError = false;
+		lResult = httpd_req_get_url_query_str(pReq, lUpgrade.sBuffer, sizeof(lUpgrade.sBuffer));
+		if (lResult == ESP_OK){
+			lResult = httpd_query_key_value(lUpgrade.sBuffer, "force", lWork, sizeof(lWork));
+			if (lResult == ESP_OK){
+				if (strcmp(lWork, "true") == 0){
+					lForce = true;
+				} else {
+					lForce = false;
+					lError = true;
+				}
+			} else {
+				lForce = false;
+			}
+			if (!lError){
+				memset(lWork, 0, sizeof(lWork));
+				lResult = httpd_query_key_value(lUpgrade.sBuffer, "version", lWork, sizeof(lWork));
+				if (lResult != ESP_OK){
+					lError = true;
+				}
+			}
+		}
+		if (lError){
+			lLogAction = LogGetUpgradeError;
+			xMessCreateError(lUpgrade.sBuffer, sizeof(lUpgrade.sBuffer), ERROR_PAR);
+		} else {
+			xMessUpgrade(lWork, lForce, &lUpgrade);
+			if (lUpgrade.sResult.sProcessInfo == 0){
+				lLogAction = LogGetUpgrade;
+			} else {
+				lLogAction = LogGetUpgradeError;
+			}
+		}
+	}
+	lIP = sGetRemoteIP(pReq);
+	xLogEntry(lLogAction, lIP);
+	httpd_resp_set_type(pReq, TYPE_JSON);
+	httpd_resp_send(pReq, lUpgrade.sBuffer, strlen(lUpgrade.sBuffer));
+	return ESP_OK;
+}
+
 esp_err_t hPutSwitch(httpd_req_t *pReq) {
 	size_t lLength;
     struct MessSwitch lSwitch;
@@ -341,6 +407,7 @@ void xStartServer() {
 			httpd_register_uri_handler(mServer, &hGetSettingCtrl);
 			httpd_register_uri_handler(mServer, &hGetLogCtrl);
 			httpd_register_uri_handler(mServer, &hGetRestartCtrl);
+			httpd_register_uri_handler(mServer, &hGetUpgradeCtrl);
 			httpd_register_uri_handler(mServer, &hPutSwitchCtrl);
 			httpd_register_uri_handler(mServer, &hPutSettingCtrl);
 		} else {

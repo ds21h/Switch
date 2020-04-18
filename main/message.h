@@ -26,6 +26,13 @@ struct MessRestart{
 	char sBuffer[50];
 };
 
+struct MessUpgrade{
+	struct {
+		uint8 sProcessInfo;
+	} sResult;
+	char sBuffer[60];
+};
+
 struct MessLog{
 	struct {
 		bool sFirst;
@@ -33,7 +40,7 @@ struct MessLog{
 		int sStart;
 		int sMax;
 	} sLogInfo;
-	char sBuffer[1024];
+	char sBuffer[512];
 };
 
 
@@ -43,6 +50,7 @@ void xMessSwitchLogInit(int32 pStart, int32 pMax, struct MessLog * pLog);
 void xMessSwitchLogContent(struct MessLog * pLog);
 void xMessSwitchLogEnd(struct MessLog * pLog);
 void xMessRestart(struct MessRestart * pRestart);
+void xMessUpgrade(const char * pVersion, bool pForce, struct MessUpgrade * pUpgrade);
 void xMessSetSwitch(struct MessSwitch * pSwitch);
 void xMessSetSetting(struct MessSetting * pSetting);
 void xMessCreateError(char * pBuffer, const int pLength, const char * pText);

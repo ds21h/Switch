@@ -11,11 +11,13 @@
 enum AsyncAction{
 	ActionWriteSetting,
 	ActionRestart,
+	ActionUpgrade,
 	ActionMessage
 };
 
 struct QueueItem{
 	enum AsyncAction qAction;
+	void * ActionData;
 };
 
 void xAsyncProcess(struct QueueItem pItem);

@@ -16,6 +16,7 @@
 #include "server.h"
 #include "main_wifi.h"
 #include "main_time.h"
+#include "main_ota.h"
 
 QueueHandle_t mAsyncQueue = NULL;
 
@@ -42,6 +43,10 @@ void hAsync(void *pParameters){
 				lDelay--;
 			}
 			esp_restart();
+			break;
+		case ActionUpgrade:
+			printf("Upgrade requested\n");
+			xOtaUpgrade((struct OtaData *)lItem.ActionData);
 			break;
 		default:
 			printf("Message fromAsyncTask\n");
