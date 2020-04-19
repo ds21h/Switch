@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ota_exec.h"
-#include "xesp_ota_ops.h"
+#include "esp_ota_ops.h"
 #include <esp_log.h>
 #include "setting.h"
 
@@ -36,6 +36,7 @@ static void sHttpCleanup(esp_http_client_handle_t pClient)
     esp_http_client_cleanup(pClient);
 }
 
+/*
 esp_err_t hHttpEvent(esp_http_client_event_t *pEvt){
     switch(pEvt->event_id) {
         case HTTP_EVENT_ERROR:
@@ -61,7 +62,7 @@ esp_err_t hHttpEvent(esp_http_client_event_t *pEvt){
             break;
     }
     return ESP_OK;
-}
+} */
 
 esp_err_t xOtaExec(const char * pVersion){
     esp_http_client_handle_t lClient;
@@ -72,7 +73,6 @@ esp_err_t xOtaExec(const char * pVersion){
     char *lUpgradeBuffer;
     int lImageLength;
     int lDataRead;
-//    int lImageNumber;
 	esp_http_client_config_t lConfig;
 	char lUrl[64];
 	int lPos;
@@ -81,14 +81,7 @@ esp_err_t xOtaExec(const char * pVersion){
     lUpdatePartition = esp_ota_get_next_update_partition(NULL);
     if (lUpdatePartition == NULL) {
         ESP_LOGE(TAG, "Passive OTA partition not found");
-//        sHttpCleanup(lClient);
         return ESP_FAIL;
-/*    } else {
-    	if (lUpdatePartition == "ota_0"){
-    		lImageNumber = 1;
-    	} else {
-    		lImageNumber = 2;
-    	} */
     }
 
 	strcpy(lUrl, "http://");
@@ -99,7 +92,7 @@ esp_err_t xOtaExec(const char * pVersion){
 	printf("Url: %s\n", lUrl);
 	memset(&lConfig, 0, sizeof(lConfig));
     lConfig.url = lUrl;
-    lConfig.event_handler = hHttpEvent;
+//    lConfig.event_handler = hHttpEvent;
 
     lClient = esp_http_client_init(&lConfig);
     if (lClient == NULL) {

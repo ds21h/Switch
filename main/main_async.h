@@ -11,7 +11,6 @@
 enum AsyncAction{
 	ActionWriteSetting,
 	ActionRestart,
-	ActionUpgrade,
 	ActionMessage
 };
 

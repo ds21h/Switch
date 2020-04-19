@@ -1,27 +1,64 @@
-# Simple HTTPD Server Example
+# ESP8266-Switch
 
-The Example consists of HTTPD server demo with demostration of URI handling :
-    1. URI \hello for GET command returns "Hello World!" message
-    2. URI \echo for POST command echoes back the POSTed message
+Software to control ESP8266 based switch.
+The switch registers to your wifi network. It can then be adressed by a few REST-services.  
+If SSID in setting is not set (value "") the switch starts as AccessPoint with name EspSw_nnnnnnnnnnnn (nnnnnnnnnnnn is the MAC). After connecting using password "EspSwSetup" it listens to IP adress 192.168.4.1 (port 80). You can use the Java desktop application 'EspSettings' to give the settings their proper value.  
+If SSID in setting is set the switch tries to connect to the specified network. If that isn't successfull within 40 seconds the connection attempt stops. The switch needs to be restarted. After 5 consecutive failures all the settings are reset so it wil start the next time as an Access Point. 
 
-* Configure the project using "make menuconfig" and goto :
-    * Example Configuration ->
-        1. WIFI SSID: WIFI network to which your PC is also connected to.
-        2. WIFI Password: WIFI password
+If you like this/hate this/have any comments/have any questions/just want to chat about this please leave me a message at ds21h@hotmail.com
 
-* In order to test the HTTPD server persistent sockets demo :
-    1. compile and burn the firmware "make flash"
-    2. run "make monitor" and note down the IP assigned to your ESP module. The default port is 80
-    3. test the example :
-        * run the test script : "python2 scripts/client.py \<IP\> \<port\> \<MSG\>"
-            * the provided test script first does a GET \hello and displays the response
-            * the script does a POST to \echo with the user input \<MSG\> and displays the response
-        * or use curl (asssuming IP is 192.168.43.130):
-            1. "curl 192.168.43.130:80/hello"  - tests the GET "\hello" handler
-            2. "curl -X POST --data-binary @anyfile 192.168.43.130:80/echo > tmpfile"
-                * "anyfile" is the file being sent as request body and "tmpfile" is where the body of the response is saved
-                * since the server echoes back the request body, the two files should be same, as can be confirmed using : "cmp anyfile tmpfile"
-            3. "curl -X PUT -d "0" 192.168.43.130:80/ctrl" - disable /hello and /echo handlers
-            4. "curl -X PUT -d "1" 192.168.43.130:80/ctrl" -  enable /hello and /echo handlers
+For descriptions of the supported services and messages see file MessageFormat.txt
 
-See the README.md file in the upper level 'examples' directory for more information about examples.
+Version 3.0.0 19-04-2020
+- Complete rebuild on IDF model because Espressif stopped developments on NONOS SDK
+- Functional equivalent to version 2.4.0
+- Persistant logging not (yet) available
+- Logging now has entries for Get Switch and Get Log for multiple consecutive entries from the same IP address.
+- Get Log returns only used entries.
+- Get Log returns 25 entries by default. This can be overruled with the 'max' parameter. 
+- OTA upgrade from previous versions to this version are not possible!
+- All URI's are case sensitive
+
+
+For previous version please see repository ESP8266-Switch
+
+Version 2.4.0 01-12-2019
+- Support for different Switch boards added
+	- Setting SwitchModel added (see MessageFormat.txt for supported models)
+	- switch.c and button.c altered to handle this
+- URI /Switch/Restart added to force a restart (necessary after changing some of the settings)
+
+Version 2.3.2 27-07-2019
+- Complete auto-off function  
+	- Make log entry with auto-off  
+	- Include auto-off time in settings  
+	- Initial auto-off after 43200 seconds (12 hours)  
+	- Auto-off value of 0 disables function  
+	- Display on-time in status  
+
+Version 2.3.1 14-07-2019:
+- Added basic auto-off function that switches off after 12 hours
+
+Version 2.3.0 08-12-2018:
+- The Dutch API is removed
+- Message buffers increased to 2048 bytes (log messages caused overflow)
+- Button setting improved. Changing this setting only had effect after restart. Now immediately.
+- URI /Switch/Button deleted. Button setting only available in /Switch/Setting
+- Upgraded to SDK 3.0.0
+
+Version 2.2.1 19-09-2018:
+- xSwitchInit moved from eMainSetup to cbMainSystemReady in order to bypass the startup delay: The switch is ON on startup and xSwitchInit switches it off!
+
+Version 2.2.0 13-08-2018 (never published):
+- MAC is optional in setting. Note: Setting the MAC requires a double restart of the module before the MAC is used.
+- Server IP and Port are now part of Settings.
+- In Settings the version is relocated to the front. This to make upgrade possible. This version is not compatible with previous version.
+- Version checks are included for upgrade. Normally only higher version will be accepted.
+- Force option is included in upgrade to load non-accepted version.
+
+Version 2.1:
+  - Software is in the English language
+  - Services now exist in both English and Dutch. Usage is controled by te first part ot the URI. If this reads 'Schakelaar' then the Dutch version is used. If this reads 'Switch' the English version is used. Please use the English version. In the future the Dutch version will be removed.
+  - The URI is now case-independent.
+  - The software is the same for every switch. All settings are seperately stored. If the settings are not yet there the ESP8266 boots as an Access Point using the name EspSw-[mac]. It can then be connected to using the password EspSwSetup in order to initialise the settings. For this a Java desktop program is available (EspSettings).
+  - The software is now basically capable of updating over the air (FOTA). For that an extra URI is implemented requesting an update. For the update itself a server is required. A Javax version is available (EspServer).

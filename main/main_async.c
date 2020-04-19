@@ -44,10 +44,6 @@ void hAsync(void *pParameters){
 			}
 			esp_restart();
 			break;
-		case ActionUpgrade:
-			printf("Upgrade requested\n");
-			xOtaUpgrade((struct OtaData *)lItem.ActionData);
-			break;
 		default:
 			printf("Message fromAsyncTask\n");
 			break;
