@@ -3,11 +3,11 @@
 Software to control ESP8266 based switch.
 The switch registers to your wifi network. It can then be adressed by a few REST-services.  
 If SSID in setting is not set (value "") the switch starts as AccessPoint with name EspSw_nnnnnnnnnnnn (nnnnnnnnnnnn is the MAC). After connecting using password "EspSwSetup" it listens to IP adress 192.168.4.1 (port 80). You can use the Java desktop application 'EspSettings' to give the settings their proper value.  
-If SSID in setting is set the switch tries to connect to the specified network. If that isn't successfull within 40 seconds the connection attempt stops. The switch needs to be restarted. After 5 consecutive failures all the settings are reset so it wil start the next time as an Access Point. 
+If SSID in setting is set the switch tries to connect to the specified network. If that isn't successfull within 40 seconds a connection failure is registered. After 5 consecutive failures all the settings are reset so it wil start the next time as an Access Point. 
 
 If you like this/hate this/have any comments/have any questions/just want to chat about this please leave me a message at ds21h@hotmail.com
 
-For descriptions of the supported services and messages see file MessageFormat.txt
+For descriptions of the supported services and messages see file MessageFormat.docx
 
 Version 3.0.0 19-04-2020
 - Complete rebuild on IDF model because Espressif stopped developments on NONOS SDK
