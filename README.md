@@ -1,4 +1,4 @@
-# ESP8266-Switch
+# ESP-IDF Switch
 
 Software to control ESP8266 based switch.
 The switch registers to your wifi network. It can then be adressed by a few REST-services.  
@@ -8,6 +8,14 @@ If SSID in setting is set the switch tries to connect to the specified network. 
 If you like this/hate this/have any comments/have any questions/just want to chat about this please leave me a message at ds21h@hotmail.com
 
 For descriptions of the supported services and messages see file MessageFormat.docx
+
+Version 3.1.0 - 04-05-2020
+- OTA available according to the copy-model  
+	- Only one image is used  
+	- OTA writes it in the second partition  
+	- On restart the bootloader copies it to the first partition  
+- Persistant logging also available (LogLevel 2)
+- Changed the model for Button processing from interupt driven to polling. It didn't work on model 2 boards.
 
 Version 3.0.0 19-04-2020
 - Complete rebuild on IDF model because Espressif stopped developments on NONOS SDK
@@ -23,7 +31,7 @@ Version 3.0.0 19-04-2020
 For previous version please see repository ESP8266-Switch
 
 Version 2.4.0 01-12-2019
-- Support for different Switch boards added
+- Support for different Switch boards added  
 	- Setting SwitchModel added (see MessageFormat.txt for supported models)
 	- switch.c and button.c altered to handle this
 - URI /Switch/Restart added to force a restart (necessary after changing some of the settings)

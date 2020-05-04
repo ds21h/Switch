@@ -13,6 +13,8 @@
 enum LogItem {
 LogNone = 0,
 LogInit,
+LogCont,
+LogLevel,
 LogGetSwitch,
 LogGetSwitchMult,
 LogGetSwitchError,
@@ -40,6 +42,7 @@ void xLogActionStr(int pEntry, char * pBuffer, int pLength);
 long xLogTime(int pEntry);
 uint32 xLogIP(int pEntry);
 void xLogEntry(enum LogItem pAction, uint32 pIp);
+void xLogSetLevel(uint8 pLevel);
 void xLogInit();
 
 #endif /* MAIN_LOGGER_H_ */

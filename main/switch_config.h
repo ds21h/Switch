@@ -8,7 +8,7 @@
 #ifndef MAIN_SWITCH_CONFIG_H_
 #define MAIN_SWITCH_CONFIG_H_
 
-#define VERSION			"v3.0.0"
+#define VERSION			"v3.1.0"
 
 #define STARTPAUSE		10
 

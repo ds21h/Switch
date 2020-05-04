@@ -12,6 +12,7 @@
 #include "FreeRTOS/FreeRTOS.h"
 #include "FreeRTOS/timers.h"
 #include "button.h"
+#include "logger.h"
 
 #define SETTINGVERSION		1
 
@@ -131,6 +132,7 @@ void xSettingSetLogLevel(uint8 pLevel){
 		if (mSetting.sLogLevel != pLevel){
 			mSetting.sLogLevel = pLevel;
 			mSettingChanged = true;
+			xLogSetLevel(pLevel);
 		}
 	}
 }
