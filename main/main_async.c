@@ -6,9 +6,9 @@
  */
 #include "switch_config.h"
 #include "main_async.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
-#include "FreeRTOS/queue.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
+#include "freertos/queue.h"
 #include "portmacro.h"
 #include "setting.h"
 #include "esp_system.h"

@@ -5,8 +5,8 @@
  *      Author: Jan
  */
 #include "switch_config.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "esp_timer.h"
 #include "lwip/apps/sntp.h"
 #include "time.h"
@@ -20,6 +20,7 @@ void xTimeString(int32 pTime, char * pResult, uint8 pLength){
 		pResult = "";
 	} else {
 		lTimeIn = pTime;
+
 		localtime_r(&lTimeIn, &lTime);
 		strftime(pResult, pLength, "%Y-%m-%d %H:%M:%S", &lTime);
 	}

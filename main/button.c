@@ -1,6 +1,6 @@
 #include "switch_config.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "driver/gpio.h"
 #include "switch.h"
 #include "logger.h"

@@ -5,8 +5,8 @@
  *      Author: Jan
  */
 #include "switch_config.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "string.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
@@ -98,8 +98,9 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 		switch (pEventID){
 		case WIFI_EVENT_STA_START:
 			printf("Station Start\n");
-			lResult = esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
+			lResult = esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
 			ESP_ERROR_CHECK(lResult);
+			printf("Protocol set. Connect!\n");
 			lResult = esp_wifi_connect();
 			ESP_ERROR_CHECK(lResult);
 			break;
@@ -127,6 +128,9 @@ static void hStationHandler(void* arg, esp_event_base_t pEventBase, int32_t pEve
 				ESP_ERROR_CHECK(lResult);
 				break;
 			}
+			break;
+		default:
+			printf("Event %d received\n", pEventID);
 			break;
 		}
 	}
@@ -185,7 +189,6 @@ void sInitialiseStation(){
 	wifi_init_config_t lConfig;
 	wifi_config_t lWifiConfig;
 	esp_err_t lResult;
-	uint8 lMac[6];
 
 	lResult = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &hStationHandler, NULL);
 	ESP_ERROR_CHECK(lResult);
@@ -206,7 +209,6 @@ void sInitialiseStation(){
 	lResult = esp_wifi_set_config(ESP_IF_WIFI_STA, &lWifiConfig);
 	ESP_ERROR_CHECK(lResult);
 
-	memcpy(lMac, xSettingMac(), sizeof(lMac));
 	if (xSettingMacPresent()){
 		lResult = esp_wifi_set_mac(ESP_IF_WIFI_STA, xSettingMac());
 	}

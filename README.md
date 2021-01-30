@@ -9,6 +9,10 @@ If you like this/hate this/have any comments/have any questions/just want to cha
 
 For descriptions of the supported services and messages see file MessageFormat.docx
 
+Version 3.1.0 - 30-01-2021
+- Small changes in order to use in Linux environment (FreeRTOS directory is freertos)
+- Temporary implementations of cJSON and setenv deleted because they are now properly supported by the SDK
+
 Version 3.1.0 - 04-05-2020
 - OTA available according to the copy-model  
 	- Only one image is used  

@@ -7,7 +7,6 @@
 #include <ctype.h>
 #include <string.h>
 #include "switch_config.h"
-#include "cJSON.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include <esp_http_server.h>
@@ -18,6 +17,7 @@
 #include "main_async.h"
 #include "main_time.h"
 #include "main_ota.h"
+#include "cJSON.h"
 
 #define ERROR_PARSE		"JSON error"
 #define ERROR_NO_ACTION	"No action specified"
@@ -137,7 +137,6 @@ void sGetLogEntry(int pEntry, char * pBuffer){
 	uint32 lIpInt;
 
 	lLogEntry = cJSON_CreateObject();
-//	cJSON_AddItemToArray(lLog, lLogEntry);
 	lEntrySeq = cJSON_CreateNumber(pEntry);
 	cJSON_AddItemToObject(lLogEntry, "entry", lEntrySeq);
 	xLogActionStr(pEntry, lWorkS, sizeof(lWorkS));

@@ -5,8 +5,8 @@
  *      Author: Jan
  */
 #include "switch_config.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "stdlib.h"
 #include "string.h"
 #include "esp_system.h"

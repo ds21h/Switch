@@ -9,8 +9,8 @@
 #include "esp_system.h"
 #include <string.h>
 #include "setting.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "button.h"
 #include "logger.h"
 

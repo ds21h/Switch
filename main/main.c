@@ -1,6 +1,6 @@
 #include "switch_config.h"
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/timers.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "sys/param.h"
@@ -53,7 +53,7 @@ void tcbHeartBeat(TimerHandle_t pTimer) {
 	if (mStartCounter == STARTPAUSE){
 		printf("SDK version:%s\n", esp_get_idf_version());
 	    printf("Flash chip %dMB\n", spi_flash_get_chip_size() / (1024 * 1024));
-	    printf("Ticks per second: %d\n", pdMS_TO_TICKS(1000));
+	    printf("Ticks per second: %d\n", (int)pdMS_TO_TICKS(1000));
 	    mCountSingle = false;
 	    xAsyncInit();
 	    xLogInit();
